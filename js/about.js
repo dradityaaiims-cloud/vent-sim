@@ -14,9 +14,7 @@ const ME = {
     ['Writing on Medium', 'https://medium.com/@draditya.aiims'],
   ],
   apps: [
-    ['Pulmonary hypertension interactive pathophysiology', 'https://pulmhtnpathology.netlify.app'],
-    ['Pulmonary hypertension expert interactive learning app', 'https://pulmhtn.netlify.app'],
-    ['CRT-PHR navigator protocol', 'https://andromeda2.netlify.app'],
+    ['Robotic bronchoscopy simulator', 'https://dradityaaiims-cloud.github.io/bronchoscopy-sim/'],
   ],
 };
 
@@ -39,6 +37,7 @@ export function renderAbout(box) {
   const c = citations();
   box.innerHTML = `<div class="prose">
 <h2>About</h2>
+<img class="headshot" src="assets/headshot.jpg" alt="Portrait of ${esc(ME.name)}" width="140" height="140">
 <h3>${esc(ME.name)}</h3>
 ${ME.bio.map((p) => `<p>${esc(p)}</p>`).join('')}
 
