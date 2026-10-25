@@ -3,7 +3,7 @@ export const CONFIG = {
   version: '0.2.0',
   year: 2026,
   // Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site > copy the "token" from the snippet. Empty = analytics off.
-  cfToken: '',
+  cfToken: '5e95195d75bf465bb2c04490600eb6fd',
   // Public link of your Google Form (Send > link icon). Empty = the Feedback buttons fall back to email.
   feedbackUrl: 'https://forms.gle/VdCnVF6TfKWQFiRR7',
   // Contact email, split so it is not plain text in the page source (reduces scraping). Change to your routed address later.
