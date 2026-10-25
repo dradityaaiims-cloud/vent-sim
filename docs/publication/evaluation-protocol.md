@@ -17,7 +17,7 @@ Single-group pre-post study, with the two matched quiz forms counterbalanced (ha
 
 ## 4. Intervention (about 60 minutes)
 1. 5 min: consent, participant code, pre-quiz (Form A or B), confidence items. About 10 minutes in total including the quiz.
-2. 10 min: orientation using the Learn tab "How to use" and "Reading the screen".
+2. 10 min: orientation: the built-in guided tour (about 1 minute; learners may replay it) and the Learn tab quick start, "How to use" and "Reading the screen". Note whether each learner finds the Patient bar, Controls and Insp hold unaided in the first five minutes (observer checklist).
 3. 30 min: guided practice on the cases, in this order: case 1 (high peak pressure), case 2 (pneumothorax), case 3 (auto-PEEP), case 5 (tidal volume by weight), case 10 (SBT), plus two asynchrony examples (ineffective efforts, double triggering). Use hints as needed.
 4. 10 min: facilitator debrief (what changed in the waveforms? what is the fix?).
 5. Post-quiz (the other form) and the survey in section 6. Learners work alone or in pairs: record which.
@@ -38,6 +38,9 @@ Rate each statement from 1 (strongly disagree) to 5 (strongly agree).
 1. I could use the simulator without help after the orientation.
 2. The screen and controls were easy to understand.
 3. The Learn tab explained what I needed.
+3a. The guided tour helped me understand the screen.
+3b. I knew where to start when I first opened the simulator.
+3c. The first-run patient setup was easy to use.
 
 **Realism and learning**
 4. The waveforms and numbers looked like what I see on a real ventilator.

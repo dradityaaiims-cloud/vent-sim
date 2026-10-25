@@ -39,6 +39,7 @@ Netlify / Vercel / Cloudflare Pages also work: no build command, publish directo
 - **Examples** (bottom bar): 7 patient-ventilator asynchronies (reverse triggering in PC and VC, ineffective efforts, early and late cycling, breath stacking, auto-triggering), each produced by the engine.
 - **Show Pmus** overlays patient effort; triangles mark patient-triggered breaths; **Freeze** plus click gives a crosshair that reads pressure, flow and volume at one instant; **Window** and **Fullscreen** for projection.
 - **Share link / learner link** (Tools): the whole setup is encoded in the URL, no server. `?learner=1` hides the patient and examples, `&hidep=1` also hides pressure numbers.
+- **First-run setup and guided tour:** the first visit asks for lung type, patient and mode, then runs a one-minute tour (replay from the Tour button). Learn is the first tab and opens with a quick start; hover any number for an explanation.
 - Measurements include stress index (VC, constant flow) and P0.1.
 
 ## Layout

@@ -6,7 +6,7 @@
 Trainees learn ventilator management from scattered bedside exposure, lectures and, where available, costly manikin simulation. We built a free, open-source, browser-based ventilator simulator with a physics-based patient (normal, COPD, asthma, ARDS), a ventilator-style screen with waveforms, loops and animated lungs, on-demand blood gases, 10 troubleshooting cases with hints and scoring, 7 patient-ventilator asynchrony examples, and a Learn section. It was built by a physician working with an AI coding assistant and deployed as a static website with automated tests, an open licence and a citable DOI. A companion manuscript describes the process from idea to deployment, the decisions and problems, the verification done, and a plan to test it with students. **The model is checked against analytic results and calibrated to one published COPD cohort. It has not been clinically reviewed, and no learner data exist yet.** That is why I am asking for your review.
 
 ## What I am asking you to look at (about 20 minutes)
-1. **Try it** (10 min): https://dradityaaiims-cloud.github.io/vent-sim/ . Open **Learn > How to use**, run one or two **Scenarios**, and load two items from **Examples** (try reverse triggering and ineffective efforts). Turn on **Show Pmus**.
+1. **Try it** (10 min): https://dradityaaiims-cloud.github.io/vent-sim/ . Choose a patient in the first-run dialog, take the **1-minute tour**, read the **Learn** quick start, run one or two **Scenarios**, and load two items from **Examples** (try reverse triggering and ineffective efforts). Turn on **Show Pmus**.
 2. **Check the clinical content** (5 min): the targets and strategies tables in Learn, and the questions and rationales in the cases you tried. Is anything wrong, unsafe or misleading?
 3. **Check the realism** (5 min): do the waveforms, numbers and blood gases behave the way you would expect? Where do they not?
 
@@ -16,6 +16,7 @@ Trainees learn ventilator management from scattered bedside exposure, lectures a
 - **Model assumptions**: the Model & limits tab, and parameter tags `[SRC] / [CALC] / [ASSUMPTION]` in `js/engine/presets.js`.
 
 ## Please tell me
+- Whether you knew where to start in the first minute, and what you would change about the tour or the Learn tab.
 - The single most important error or misleading thing you found.
 - Anything you would not want a trainee to learn from it.
 - Whether you would use it in teaching, and what would make you more likely to.

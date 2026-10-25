@@ -1,3 +1,6 @@
+23:05|Add guided tour: runs once after setup, relaunch from Tour button or tip strip
+23:02|First-run patient setup, patient bar on top, Learn first, fit-to-window layout, tooltips, quick start
+22:41|Manuscript figures, validation script and results, Word export, peer-review brief
 22:14|Draft manuscript: AI-assisted development of niche educational simulators, case study
 22:02|Use Zenodo concept DOI (all versions) for citation
 22:00|Open licences (MIT, CC BY 4.0), manuscript outline, pre/post quiz forms, key, evaluation protocol and survey

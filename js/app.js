@@ -145,7 +145,7 @@ function refreshControls() {
 }
 function refreshDials() {
   const st = sim.set, m = st.mode;
-  const d = [m === 'PC' ? ['ΔP', fp(st.pc), U.p] : m === 'PSV' ? ['Support', fp(st.ps), U.p] : [m === 'APV' ? 'Target VT' : 'VT', st.vt, 'mL'], ['PEEP', fp(st.peep), U.p], ['Oxygen', Math.round(st.fio2 * 100), '%']];
+  const d = [m === 'PC' ? ['ΔP', fp(st.pc), U.p] : m === 'PSV' ? ['PS', fp(st.ps), U.p] : [m === 'APV' ? 'Target VT' : 'VT', st.vt, 'mL'], ['PEEP', fp(st.peep), U.p], ['Oxygen', Math.round(st.fio2 * 100), '%']];
   $('#dials').replaceChildren(...d.map(([n, v, u]) => h('button', { class: 'dial', title: `${n}: click to change in Controls`, onclick: () => openDrawer('controls'), 'aria-label': `${n} ${v} ${u}, open controls` }, h('div', {}, h('b', {}, String(v)), h('small', {}, `${n} ${u}`)))));
 }
 function setSpeed(v) {

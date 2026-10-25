@@ -17,9 +17,9 @@ ORCID: [https://orcid.org/0009-0003-3184-7650]
 
 **Objective.** To describe, in reproducible detail, the ideation, design decisions, challenges, integrations and deployment of a free, open-source ventilator simulator built by a physician with an AI coding assistant, and to propose a plan for testing its viability with learners.
 
-**Methods.** Case study. A physician-directed, AI-assisted workflow produced a physics-based simulator (extended equation of motion, viscoelasticity, flow-dependent resistance, expiratory flow limitation, gas exchange and hemodynamics), 10 scenarios, 7 asynchrony examples and a Learn section, deployed as a static website with automated testing, a persistent identifier, an open license, privacy-preserving analytics and a feedback channel. We logged decisions and problems as they occurred and report them in structured tables. We verified the model by analytic tests and agreement with one published cohort.
+**Methods.** Case study. A physician-directed, AI-assisted workflow produced a physics-based simulator (extended equation of motion, viscoelasticity, flow-dependent resistance, expiratory flow limitation, gas exchange and hemodynamics), 10 scenarios, 7 asynchrony examples and a Learn section, deployed as a static website with automated testing, a persistent identifier, an open license, privacy-preserving analytics and a feedback channel. After informal peer feedback the interface was revised for first-time users (Learn moved to the first tab, a first-run patient setup, a patient bar, a no-scroll layout and a guided tour). We logged decisions and problems as they occurred and report them in structured tables. We verified the model by analytic tests and agreement with one published cohort.
 
-**Results.** The first working commit was made about 20 minutes after the project folder was created and the archived, citable release followed about 2 hours later on the same evening [CONFIRM, see Section 5.1]. The deliverable is about 2,100 lines of code and markup, including 425 lines of physics engine, 43 automated tests, and recurring running costs of zero for hosting, archiving, analytics and feedback (the AI assistant itself was not free). Twelve decision points and fifteen problems are documented. Several defects were caught by testing against physiological expectations, not by the AI's own first output, including a PEEP-handling inconsistency when adapting the source equation, an expiratory flow-limitation model that failed to reproduce clinically expected PEEP behaviour, and run-away auto-PEEP in scenarios. The model reproduces the mean peak pressure, plateau pressure and auto-PEEP of one published COPD cohort after calibration to it; this is not independent validation. [Learner results: to be added.]
+**Results.** The first working commit was made about 20 minutes after the project folder was created and the archived, citable release followed about 2 hours later on the same evening [CONFIRM, see Section 5.1]. The deliverable is about 2,300 lines of code and markup, including 425 lines of physics engine, 43 automated tests, and recurring running costs of zero for hosting, archiving, analytics and feedback (the AI assistant itself was not free). Sixteen decision points and seventeen problems are documented, including the first-use changes made after peer feedback. Several defects were caught by testing against physiological expectations, not by the AI's own first output, including a PEEP-handling inconsistency when adapting the source equation, an expiratory flow-limitation model that failed to reproduce clinically expected PEEP behaviour, and run-away auto-PEEP in scenarios. The model reproduces the mean peak pressure, plateau pressure and auto-PEEP of one published COPD cohort after calibration to it; this is not independent validation. [Learner results: to be added.]
 
 **Conclusions.** A clinician with domain knowledge but without software engineering training can produce a deployable, open, auditable educational simulator in hours with AI assistance. The scarce resources are not code but domain verification, honest labelling of assumptions, clinical review and learner evaluation. We provide a checklist and an evaluation protocol so that others can build, test and share similar niche tools, and we state plainly what has not yet been shown.
 
@@ -46,7 +46,7 @@ Published descriptions of educational simulators emphasise the finished product 
 Single-case descriptive study of one development project. The author is a physician (internal medicine resident) who acted as product owner, domain expert and reviewer; an AI coding assistant (Claude, Anthropic, via the Claude Code environment) wrote and edited the code and drafted text at the author's direction [CONFIRM model versions and environment for the Methods]. A commit log, test results and the conversation record serve as the data.
 
 ### 2.2 Data sources
-Git history (12 commits); automated test output; build and deployment logs; the conversation record; the source documents supplied at the outset (a build plan and a parameter sheet); and the external documents reviewed during the project. Dates and counts below come from the repository unless stated.
+Git history (17 commits at the time of writing); automated test output; build and deployment logs; the conversation record; the source documents supplied at the outset (a build plan and a parameter sheet); and the external documents reviewed during the project. Dates and counts below come from the repository unless stated.
 
 ### 2.3 Reporting guidance
 This is a descriptive innovation report. We follow the spirit of SQUIRE-EDU for the educational intervention and describe the evaluation as a protocol, not a result [CITE: Ogrinc et al., SQUIRE-EDU; verify].
@@ -86,9 +86,9 @@ A deliberately small stack: plain JavaScript modules, HTML and CSS, no build ste
 Airway pressure is the sum of elastic recoil (a lung in series with a chest wall; a Venegas sigmoid for ARDS), flow-dependent (Rohrer) resistance for airway and tube, a viscoelastic term and patient muscle pressure, following the extended equation of motion of van Diepen et al. [CITE: Biomed Signal Process Control 2026;118:109770]. Volume above the relaxed lung volume is tracked, so air trapping emerges. Four modes (volume control, pressure control, adaptive pressure control, pressure support/CPAP), flow triggering, holds, patient effort (including reverse triggering and cardiac oscillation), CO2 kinetics with a slow body store, the alveolar gas and shunt equations, haemoglobin saturation, Henderson-Hasselbalch acid-base with chronic compensation, and a simple venous-return model are implemented. Full equations are in the repository and the in-app Model tab.
 
 ### 4.3 Educational layer
-A ventilator-style screen (large measurements on the left, setpoint dials on the right, bottom tab bar); an animated lung pane (size follows volume, colour follows elastic stress, airway width follows resistance, diaphragm shows patient effort); pressure-volume and flow-volume loops always on screen; triangles marking patient-triggered breaths; a Learn section (how to use, settings, targets, strategies, formulas, expected waveforms generated live by the engine, clinical pearls); 10 scenarios; 7 asynchrony examples; freeze-and-crosshair measurement; and shareable setups.
+A ventilator-style screen (large measurements on the left, setpoint dials on the right, bottom tab bar); an animated lung pane (size follows volume, colour follows elastic stress, airway width follows resistance, diaphragm shows patient effort); pressure-volume and flow-volume loops always on screen; triangles marking patient-triggered breaths; a Learn section (how to use, settings, targets, strategies, formulas, expected waveforms generated live by the engine, clinical pearls); 10 scenarios; 7 asynchrony examples; freeze-and-crosshair measurement; and shareable setups. After peer feedback (Section 5.3) the first-use experience was added: the Learn tab is now the first tab and opens with a 60-second quick start; a first-visit dialog asks the learner for a lung type, sex, height, weight and mode (with starting settings chosen from the patient); patient settings sit in a bar at the top of the simulator; the simulator fits the window without scrolling; every number and dial has a hover explanation; and a nine-step guided tour outlines each part of the screen in turn.
 
-![Figure 2. The simulator screen (pressure support with patient effort). Large measurements (left), pressure and flow and volume waveforms with triangles at patient-triggered breaths and the dashed patient muscle pressure (centre top), animated lungs with pressure-volume and flow-volume loops (centre bottom), setpoint dials and controls (right).](figures/fig2-screenshot.png)
+![Figure 2. The simulator screen after the first-use revision (pressure support with patient effort), which fits the window with no scrolling. Patient bar (top), large measurements (left), pressure and flow and volume waveforms with triangles at patient-triggered breaths and the dashed patient muscle pressure (centre top), animated lungs with pressure-volume and flow-volume loops (centre bottom), setpoint dials and controls (right).](figures/fig2-screenshot.png)
 
 ![Figure 3. Waveforms produced by the engine for normal ventilation and seven patient-ventilator asynchronies (generated by scripts/export-gallery.mjs; no hand-drawn traces). Orange: airway pressure. Blue: flow. Dashed pink: patient muscle pressure relative to PEEP. Triangles: patient-triggered breaths.](figures/fig3-waveform-gallery.png)
 
@@ -100,6 +100,8 @@ A ventilator-style screen (large measurements on the left, setpoint dials on the
 | Scenarios as data files | Educators can write new cases without touching the engine | No |
 | Tiered hints with a cost; time acceleration; reset | Pace and support | No |
 | Unit toggles (cmH2O/kPa, mmHg/kPa, °C/°F) | Local convention | No |
+| First-run setup (learner picks lung type, patient and mode; starting volume set from predicted body weight) | The case starts at the learner's chosen level | No |
+| Guided tour, quick start and hover explanations (replayable) | Orientation at the learner's own pace | No |
 | Not yet implemented: adaptive difficulty from a learner's history; accounts; an authoring interface; multi-language | Future work | Some would |
 
 ---
@@ -117,10 +119,13 @@ A ventilator-style screen (large measurements on the left, setpoint dials on the
 | Deployed and live on GitHub Pages | ~21:20 [CONFIRM from the Actions log] |
 | Persistent identifier (Zenodo DOI) and analytics enabled | 21:29 to 21:32 |
 | Open licences, publication materials, archived release v0.2.1 | 22:00 to ~22:10 |
+| Manuscript draft, figures, validation script, Word export | 22:14 to 22:41 |
+| First-use revision after peer feedback: first-run setup, patient bar, Learn first, no-scroll layout, hover tips | 23:02 |
+| Guided tour | 23:05 |
 
 The planning documents pre-date this log, and the elapsed wall-clock time omits the author's thinking time before and between sessions. The numbers describe an expert-directed, AI-assisted run, not a typical novice effort. [Add author's estimate of total hours, including planning.]
 
-![Figure 4. Development timeline from the repository log (24 October 2026, US Eastern). Ticks are commits; decisions (D) and challenges (C) from Sections 6.1 and 6.2 are grouped by build phase, because their exact times were not recorded.](figures/fig5-timeline.png)
+![Figure 4. Development timeline from the repository log (24 October 2026, US Eastern), including the peer-feedback iteration at the end. Ticks are commits; decisions (D) and challenges (C) from Sections 6.1 and 6.2 are grouped by build phase, because their exact times were not recorded.](figures/fig5-timeline.png)
 
 ### 5.2 Workflow pattern that worked
 1. **Specify constraints before features** (static hosting, no accounts, no patient data, source tags).
@@ -130,6 +135,18 @@ The planning documents pre-date this log, and the elapsed wall-clock time omits 
 5. **Inspect the running product** in a browser, not only the code.
 6. **Review external work** (papers, existing simulators) to find gaps and mistakes, then record the decision.
 7. **Deploy early**, then add identity, licence, analytics and feedback.
+
+### 5.3 Iteration after informal peer feedback
+The tool was shown to [N] peers [CONFIRM: number, roles, how and when feedback was gathered] before any learner study. The feedback, in the author's summary, was that a first-time user could not tell where to start. Two concrete requests were to move the Learn tab forward and to add a guided tour; the author also asked in the same iteration for the patient settings to be placed at the top, for a first-run setup that asks for the lung type and settings, and for the main screen to fit the window without scrolling [CONFIRM which of these also came from reviewers]. These were implemented in two commits about three minutes apart:
+
+1. **Learn first.** The Learn tab moved to the first position and gained a four-step quick start.
+2. **First-run setup.** A dialog on the first visit asks for lung type (four cards with a one-line description of what each teaches), sex, height, weight and mode. It sets the starting volume from the predicted body weight, so a first-time user begins with a defensible setting. It is shown once, skipped for shared links, and can be reopened with "New patient...".
+3. **Patient bar.** The patient is now the first thing a learner sees at the top of the simulator, with the predicted body weight and the 6-8 mL/kg range alongside.
+4. **No scrolling.** The screen was re-laid out to fit the window (down to 1366 x 768, also with the scenario bar showing), with the measurement table, physics view and mode description moved into a "Measurements" panel in the bottom bar.
+5. **Hover explanations** on every key number and dial, and a dismissible one-paragraph "start here" strip.
+6. **Guided tour.** Nine steps (patient bar, key numbers, waveforms, lungs, loops, settings, holds and blood gas, more tools, other tabs) outline one area at a time with a short explanation, run automatically once after the first setup, can be replayed from a Tour button, and can be skipped or driven by the keyboard. It is built without a library and records nothing.
+
+The point for developers is that this first-use work was not on the original plan or in the AI's first output; it came from watching other people look at the tool. Section 7.3 adds measures to test whether these changes work.
 
 ---
 
@@ -150,6 +167,10 @@ The planning documents pre-date this log, and the elapsed wall-clock time omits 
 | D10 | Privacy-friendly, cookieless analytics added later, with an in-app privacy statement | No analytics; Google Analytics | The original promise was "no tracking"; counting users needs a change, disclosed. |
 | D11 | Feedback via a hosted form plus email, not a custom server | Own database | No server to run or secure; the form instructs users not to enter patient data. |
 | D12 | Open licences (MIT code; CC BY 4.0 content) and a persistent identifier | Keep all rights reserved | Needed for reuse, journal eligibility and citation. |
+| D13 | Move Learn to the first tab and open it with a 60-second quick start | Leave it after Scenarios | Peer feedback: new users did not know where to start. Guidance should come before the controls. |
+| D14 | First-run patient setup dialog (once, skippable, reopenable) and a patient bar at the top | Start everyone on a default normal patient; keep patient settings in a side drawer | The patient is the first decision in ventilation; setup lets a learner choose a case that matches their level. Cost: one extra click for returning users, mitigated by showing it once. |
+| D15 | Build the guided tour in-house without a library or tracking | A tour library; a video | No dependency, keeps the no-tracking promise, and the steps stay in sync with the interface. |
+| D16 | Fit the simulator to the window with no page scroll; move the measurement table to a panel | Let the page scroll | A learner should see cause and effect at once; scrolling hides the loops or the waveforms. |
 
 ### 6.2 Challenges log
 | # | Problem | How found | Resolution |
@@ -169,6 +190,8 @@ The planning documents pre-date this log, and the elapsed wall-clock time omits 
 | C13 | Git could not authenticate non-interactively | Push error | Installed the GitHub command-line tool and used browser login (no token typed) |
 | C14 | Social-media profile (LinkedIn) blocked automated reading | HTTP 999 | Used a link-aggregator page; left unverifiable credentials for the author to supply |
 | C15 | DOI confusion: version DOI vs "all versions" DOI | Reading the archive record | Cite the all-versions DOI |
+| C16 | No-scroll layout overflowed at 1366 x 768 when the scenario bar and tips were showing; the bottom bar overlapped the lower strip | Resizing the browser window and measuring | Sized numbers, dials and panes from the space actually available; hid the start strip inside scenarios |
+| C17 | The tour outline appeared on the wrong area in the embedded preview because animations were throttled to about 2 frames per second | Screenshot during testing | Removed the slide animation so the outline jumps straight to each step |
 
 ### 6.3 Integrations
 | Integration | Purpose | Cost | Notes |
@@ -223,6 +246,7 @@ The full protocol, matched quiz forms and survey are in the repository (`docs/pu
 - **Participants and size:** residents and students who have not completed a dedicated ventilator course; about 24 for a paired effect of 0.6 SD at 80% power; convenience sample.
 - **Analysis:** paired test (or signed-rank), mean difference with 95% CI, Cohen's dz, form-order check, item difficulty and discrimination; confidence changes; descriptive survey results; thematic coding of comments.
 - **Pre-specified success criteria (edit before data collection):** [for example, a mean gain of at least 1.5 of 10 points with a lower confidence bound above 0; at least 80% of learners agree the simulator helped them understand a setting's effect; no content errors reported that change a teaching point after correction].
+- **First-use measures (new):** because the first-use experience was revised, add survey items on the tour and quick start (survey items 3a to 3c in the evaluation protocol), and have the facilitator note, without prompting, whether each learner finds the Patient bar, Controls and Insp hold unaided in the first five minutes. Compare, if possible, a cohort that used the tour with one that skipped it.
 - **Usage monitoring:** cookieless analytics for page views and approximate unique visitors; a feedback form for bugs and content errors. These show reach and problems, not learning.
 - **Safeguards:** ethics review first; voluntary, anonymous, not part of any assessed activity; no patient information collected; clinician pilot of the quiz.
 - **Viability beyond learning gains:** maintenance effort (hours per month), number of content errors reported and time to fix, reuse by others (forks, citations, links), and whether a second educator can author a new case from the data format without help.
@@ -241,7 +265,8 @@ The full protocol, matched quiz forms and survey are in the repository (`docs/pu
 4. **Prefer the smallest complete version, then add.** Starting with a narrow, tested core made later additions (new screen, new modes, examples) low risk.
 5. **Be explicit about what the tool is not.** Labelling educational-only use, simulated values, non-affiliation and AI assistance was part of the design from the first commit.
 6. **Deployment is part of the education tool.** Hosting, a persistent identifier, a licence, a privacy statement and a feedback path took less time than the physics and have as much effect on adoption and trust.
-7. **Treat AI claims about the outside world with suspicion.** Where the assistant could not see a document's figures, reach a page, or confirm a policy, it said so; those gaps were left visible rather than filled in.
+7. **Show it to people early, and test the first minute.** Informal peer feedback changed the product more than any further feature would have: the Learn tab moved forward and a guided tour was added because a first-time user could not tell where to start. Neither the author's plan nor the AI's first output covered this.
+8. **Treat AI claims about the outside world with suspicion.** Where the assistant could not see a document's figures, reach a page, or confirm a policy, it said so; those gaps were left visible rather than filled in.
 
 ### 8.2 Personalisation: where this approach fits
 The tool shows low-cost personalisation (teacher-prepared cases via a link, learner-mode hiding, hints, local units and thresholds). Machine-learning-based adaptive tutoring is a different, larger undertaking and is not claimed here. A practical route is to treat cases as data, so educators and, with oversight, AI systems can draft new cases that are then tested automatically (start state fails, fix passes) and clinically reviewed before release.
@@ -258,7 +283,7 @@ Manikin simulation offers physical skills and teamwork that a browser tool canno
 - **Sustainability:** a single maintainer is a risk; open licences and a data-driven design allow others to take over.
 
 ### 8.5 Limitations
-Single case, single author, single clinical domain. The speed reflects an experienced author directing a capable assistant and is not a promise for novices. AI output varies between runs, so the process is not exactly reproducible; the repository is. The assistant used is a paid product; software hosting and archiving were free but the overall project was not free of cost. The model is a single-compartment lung with unvalidated expiratory behaviour; several parameters are assumptions; hemodynamics are simplified; some modes are absent. No learner data yet; any future evaluation will be a small, single-site, uncontrolled study.
+Single case, single author, single clinical domain. The speed reflects an experienced author directing a capable assistant and is not a promise for novices. AI output varies between runs, so the process is not exactly reproducible; the repository is. The assistant used is a paid product; software hosting and archiving were free but the overall project was not free of cost. The model is a single-compartment lung with unvalidated expiratory behaviour; several parameters are assumptions; hemodynamics are simplified; some modes are absent. No learner data yet; any future evaluation will be a small, single-site, uncontrolled study. The peer feedback that shaped the first-use design was informal and unsystematic, so it may not represent typical learners, and the effect of the revisions has not been measured.
 
 ### 8.6 Future work
 Clinical review panel and structured review form; independent model comparison; two-compartment lung and more modes; an authoring interface; multi-language support; accessibility audit; multi-site and controlled evaluation with retention testing; study of how well educators other than the author can adapt the tool.
@@ -279,9 +304,10 @@ A physician can now create, test and publish a niche educational simulator in an
 6. Run and look at the product; test on more than one browser and device.
 7. Review related work and record what you accept, reject and why.
 8. Label: educational use, simulated data, non-affiliation, AI assistance, version.
-9. Deploy with tests as a gate; add a persistent identifier, licence, privacy statement, feedback path.
-10. Get clinical review; pilot the assessment; obtain ethics approval; then test with learners.
-11. Publish all results, including negative ones; keep a changelog and fix reported errors.
+9. Show it to someone who has never seen it and watch the first minute; add orientation (a start page, a first-run setup, hover help and a short tour) where they hesitate.
+10. Deploy with tests as a gate; add a persistent identifier, licence, privacy statement, feedback path.
+11. Get clinical review; pilot the assessment; obtain ethics approval; then test with learners.
+12. Publish all results, including negative ones; keep a changelog and fix reported errors.
 
 ## Appendix B. Materials in the repository
 Source code (MIT) and teaching content (CC BY 4.0): https://github.com/dradityaaiims-cloud/vent-sim. Live tool: https://dradityaaiims-cloud.github.io/vent-sim/. Archive and DOI (all versions): https://doi.org/10.5281/zenodo.23630782. Protocol, quiz forms, key and survey: `docs/publication/`.

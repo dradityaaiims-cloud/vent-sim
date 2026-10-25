@@ -119,10 +119,11 @@ phases = [
     (20 * 60 + 10, 20 * 60 + 49, "Interface, lungs,\nloops, Learn,\nasynchrony", "D7, D8\nC8-C10"),
     (20 * 60 + 49, 21 * 60 + 10, "About, citation,\nfeedback", "D10, D11"),
     (21 * 60 + 10, 22 * 60 + 16, "Deploy, DOI, analytics,\nlicences, release,\nmanuscript", "D12\nC11-C15"),
+    (22 * 60 + 16, 23 * 60 + 8, "Figures; peer-feedback\niteration: setup, patient\nbar, Learn first, tour", "D13-D16\nC16-C17"),
 ]
-fig, ax = plt.subplots(figsize=(11, 3.6)); ax.set_xlim(start - 8, 22 * 60 + 22); ax.set_ylim(-1.6, 1.8)
+fig, ax = plt.subplots(figsize=(12, 3.8)); ax.set_xlim(start - 8, 23 * 60 + 14); ax.set_ylim(-1.6, 1.8)
 ax.axhline(0, color=DK, lw=2)
-cols = [GR, BL, OR, PK]
+cols = [GR, BL, OR, PK, '#8c6bb1']
 for (a, b, txt, dec), c in zip(phases, cols):
     ax.add_patch(plt.Rectangle((a, -0.14), b - a, 0.28, color=c, alpha=0.75))
     ax.text((a + b) / 2, 0.55, txt, ha="center", va="bottom", fontsize=8)
@@ -131,6 +132,6 @@ for t, msg in commits:
     ax.plot([t, t], [-0.22, 0.22], color=DK, lw=1.2)
 ax.plot([start], [0], marker="o", color=DK); ax.text(start, 0.35, "19:49\nfolder", ha="center", va="bottom", fontsize=7.5)
 ax.set_yticks([]); ax.spines[["left", "right", "top"]].set_visible(False)
-ticks = list(range(20 * 60, 22 * 60 + 1, 30)); ax.set_xticks(ticks); ax.set_xticklabels([f"{t // 60}:{t % 60:02d}" for t in ticks])
+ticks = list(range(20 * 60, 23 * 60 + 1, 30)); ax.set_xticks(ticks); ax.set_xticklabels([f"{t // 60}:{t % 60:02d}" for t in ticks])
 ax.set_xlabel("Clock time, 24 October 2026 (US Eastern). Black ticks = commits (n = %d).\nD = decision, C = challenge (Sections 6.1 and 6.2); grouped by build phase, not exact times." % len(commits), fontsize=8)
 save(fig, "fig5-timeline")
