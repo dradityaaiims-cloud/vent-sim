@@ -9,7 +9,7 @@ This covers the written and instructional material, including the text in
 quiz, survey and manuscript materials in `docs/publication/`.
 
 You may share and adapt it, including commercially, if you give appropriate credit
-(Singh, A., Dr. Singh's Vent Sim, https://doi.org/10.5281/zenodo.23630783), link to the licence and say if you
+(Singh, A., Dr. Singh's Vent Sim, https://doi.org/10.5281/zenodo.23630782), link to the licence and say if you
 made changes.
 
 The source code is under the MIT licence (see `LICENSE`).

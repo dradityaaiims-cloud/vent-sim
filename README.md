@@ -1,6 +1,6 @@
 # Dr. Singh's Vent Sim
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23630783.svg)](https://doi.org/10.5281/zenodo.23630783)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23630782.svg)](https://doi.org/10.5281/zenodo.23630782)
 
 Educational mechanical-ventilator simulator: normal / COPD / ARDS lungs, live monitor, on-demand ABG, loops, and 10 troubleshooting cases with hints and scoring.
 

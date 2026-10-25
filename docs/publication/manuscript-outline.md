@@ -70,7 +70,7 @@ Design, participants, intervention, outcomes (10-item quiz in two matched forms,
 - Funding: none declared (confirm).
 - Competing interests: none declared (confirm).
 - **AI assistance:** the software and drafts of educational materials were developed with AI coding assistance (Claude, Anthropic), directed and checked by the author. AI is not an author.
-- Data and code availability: code https://github.com/dradityaaiims-cloud/vent-sim; archived DOI 10.5281/zenodo.23630783; de-identified evaluation data [repository].
+- Data and code availability: code https://github.com/dradityaaiims-cloud/vent-sim; archived DOI 10.5281/zenodo.23630782; de-identified evaluation data [repository].
 - Acknowledgements: [people who reviewed or tested].
 - Author contributions (CRediT).
 

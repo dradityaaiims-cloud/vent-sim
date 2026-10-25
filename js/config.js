@@ -10,7 +10,7 @@ export const CONFIG = {
   emailUser: 'draditya.aiims',
   emailDomain: 'gmail.com',
   // Add after you publish a release on Zenodo (https://zenodo.org links your GitHub repo and mints a DOI). Format: 10.5281/zenodo.1234567
-  doi: '10.5281/zenodo.23630783',
+  doi: '10.5281/zenodo.23630782',
   repoUrl: 'https://github.com/dradityaaiims-cloud/vent-sim',
 };
 export const mailto = (subject = '') => `mailto:${CONFIG.emailUser}@${CONFIG.emailDomain}${subject ? '?subject=' + encodeURIComponent(subject) : ''}`;
