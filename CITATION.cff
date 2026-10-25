@@ -7,4 +7,6 @@ date-released: 2026-10-24
 authors:
   - family-names: Singh
     given-names: Aditya
-# TODO after publishing: add `repository-code:` (GitHub URL), `url:` (live site) and `doi:` (from Zenodo).
+repository-code: "https://github.com/dradityaaiims-cloud/vent-sim"
+url: "https://dradityaaiims-cloud.github.io/vent-sim/"
+# TODO: add `doi:` after archiving a release on Zenodo.
