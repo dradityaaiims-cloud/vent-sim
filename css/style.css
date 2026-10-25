@@ -165,3 +165,11 @@ body.learner #patientbar { display: none; }
 .dial b { font-size: clamp(14px, calc(var(--sh, 600px) * 0.04), 24px); } .dial small { font-size: clamp(8px, calc(var(--sh, 600px) * 0.016), 10px); }
 .rbtn { padding: clamp(3px, calc(var(--sh, 600px) * 0.012), 10px) 6px; font-size: clamp(11px, calc(var(--sh, 600px) * 0.024), 14px); }
 .rcol .qb button { padding: clamp(2px, calc(var(--sh, 600px) * 0.008), 6px); }
+
+/* guided tour */
+.tour-mask { position: fixed; inset: 0; z-index: 60; }
+.tour-hole { position: fixed; z-index: 61; border: 2px solid var(--f); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(3, 7, 12, 0.72); pointer-events: none; }
+.tour-card { position: fixed; z-index: 62; background: #0e151d; border: 1px solid var(--f); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 40px #000a; }
+.tour-card h3 { margin: 2px 0 6px; font-size: 15px; color: var(--text); text-transform: none; letter-spacing: 0; } .tour-card p { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: #cfd8e3; }
+.tour-n { font-size: 11px; color: var(--dim); } .tour-btns { display: flex; gap: 6px; align-items: center; } .tour-btns .grow { flex: 1; } .tour-skip { border-color: transparent; background: transparent; color: var(--dim); }
+.tour-btns .primary { background: var(--f); color: var(--ink-on-acc); border-color: var(--f); font-weight: 600; }

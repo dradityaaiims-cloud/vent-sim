@@ -4,6 +4,7 @@ import { MODEL_HTML } from './model.js';
 import { fit, lane, range, col } from './draw.js';
 import { drawLung } from './lung.js';
 import { renderLearn } from './learn.js';
+import { startTour } from './tour.js';
 import { ASYN } from './asyn.js';
 import { CONFIG, mailto } from './config.js';
 import { renderAbout } from './about.js';
@@ -470,6 +471,23 @@ function fireEvents() {
   (scn.sc.events || []).forEach((e, i) => { if (!scn.fired.has(i) && sim.t >= e.t) { scn.fired.add(i); sim.patch(e.patch); flash(e.say || 'Something changed'); } });
 }
 
+// ---------- guided tour ----------
+const TOUR = [
+  { sel: '#patientbar', pos: 'below', title: 'Start with the patient', text: 'Choose the lung type (normal, COPD, asthma, ARDS), sex, height and weight. Tidal volume is set from <b>predicted body weight</b>, shown here with the usual 6-8 mL/kg range, not from actual weight.' },
+  { sel: '#lcol', pos: 'right', title: 'The numbers that matter', text: 'Peak pressure, minute volume, exhaled volume, total rate, expiratory time constant and SpO2. The small numbers are your set values and limits. <b>Hover any number</b> for what it means.' },
+  { sel: '.wavewrap', pos: 'below', title: 'Waveforms', text: 'Airway pressure, flow and volume against time. A pink triangle marks each breath the <b>patient</b> triggered. Tick <b>Show Pmus</b> to see the patient\'s own effort. <b>Freeze</b>, then click the trace to read exact values.' },
+  { el: () => $('#lung').closest('.pane'), pos: 'above', title: 'The lungs', text: 'Size follows volume (exaggerated), colour follows stress (blue low, red high), the airway narrows with resistance, and the line below is the diaphragm. A collapsed lung shows a pneumothorax.' },
+  { el: () => $('#loop-pv').closest('.pane'), pos: 'above', title: 'Loops', text: 'The pressure-volume loop (a flatter loop means stiffer lungs) and the flow-volume loop (flow that does not return to zero means air trapping). <b>Save ref</b> keeps a loop so you can compare after a change.' },
+  { sel: '#rcol', pos: 'left', title: 'Ventilator settings', text: '<b>Modes</b> chooses how breaths are given. The round dials show the main settings; click one or press <b>Controls</b> to change everything. Change one thing at a time and watch what moves.' },
+  { sel: '.qb', pos: 'left', title: 'Holds and blood gas', text: '<b>Insp hold</b> (volume control) reads plateau pressure. <b>Exp hold</b> reads total PEEP and auto-PEEP. <b>Get ABG</b> samples a blood gas. CO2 takes minutes to change, so use the time speed in Tools.' },
+  { sel: '.bbar', pos: 'above', title: 'More tools', text: '<b>Measurements</b>: compliance, resistance and driving pressure after holds. <b>Tools</b>: time speed and share links. <b>Examples</b>: common ventilator problems to learn from. <b>Effort & tube</b>: how the patient breathes.' },
+  { sel: 'header nav', pos: 'below', title: 'Learn and practise', text: '<b>Learn</b> explains every setting, the targets and the waveforms. <b>Scenarios</b> has 10 cases with hints and scoring. <b>About</b> has how to cite this tool and how to send feedback.' },
+];
+function runTour() {
+  showTab('sim'); openDrawer('');
+  setTimeout(() => startTour(TOUR, () => { try { localStorage.setItem('vsim-tour', '1'); } catch { /* */ } }), 150);
+}
+
 // ---------- layout: the simulator fits the window with no page scroll ----------
 function layout() {
   const t = $('#tab-sim'); if (t.hidden) return;
@@ -488,7 +506,7 @@ const LUNGS = {
 };
 function syncBar() {
   $('#pb-lung').value = sim.key; $('#pb-sex').value = sim.pt.sex; $('#pb-h').value = sim.pt.height; $('#pb-w').value = sim.pt.weight; $('#pb-ett').value = sim.pt.ett;
-  $('#pb-pbw').textContent = `Predicted body weight ${sim.pbw.toFixed(1)} kg | 6-8 mL/kg = ${Math.round(sim.pbw * 6)}-${Math.round(sim.pbw * 8)} mL`;
+  $('#pb-pbw').textContent = `PBW ${sim.pbw.toFixed(1)} kg (6-8 mL/kg = ${Math.round(sim.pbw * 6)}-${Math.round(sim.pbw * 8)} mL)`;
 }
 function bindBar() {
   $('#pb-lung').onchange = (e) => loadFree(e.target.value);
@@ -518,7 +536,7 @@ function finishSetup(thenLearn) {
   $('#setup-dlg').close(); loadCustom(suLung, mods, set);
   try { localStorage.setItem('vsim-setup-done', '1'); } catch { /* private mode */ }
   speed = 1; showTab(thenLearn ? 'learn' : 'sim');
-  if (!thenLearn) maybeTip();
+  if (!thenLearn) { maybeTip(); let t = false; try { t = localStorage.getItem('vsim-tour') === '1'; } catch { /* */ } if (!t) setTimeout(runTour, 400); }
 }
 function maybeTip() { let seen = false; try { seen = localStorage.getItem('vsim-tip') === '1'; } catch { /* */ } $('#tip').hidden = seen || document.body.classList.contains('learner'); setTimeout(layout, 0); }
 
@@ -581,6 +599,8 @@ $('#su-go').onclick = () => finishSetup(false);
 $('#su-learn').onclick = () => finishSetup(true);
 $('#setup-dlg').addEventListener('cancel', () => { speed = 1; try { localStorage.setItem('vsim-setup-done', '1'); } catch { /* */ } });
 $('#tip-x').onclick = () => { $('#tip').hidden = true; try { localStorage.setItem('vsim-tip', '1'); } catch { /* */ } layout(); };
+$('#tip-tour').onclick = runTour;
+$('#pb-tour').onclick = runTour;
 $('#tip-learn').onclick = () => showTab('learn');
 bindBar();
 $('#r-modes').onclick = () => openDrawer('modes');
