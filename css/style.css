@@ -107,3 +107,10 @@ table.abg .lo { color: #7db8ff; } table.abg .hi { color: #ffb59a; }
 @media (max-width: 1000px) { .screen { grid-template-columns: 140px minmax(0, 1fr); } .rcol { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); } .lower { grid-template-columns: 1fr; } }
 
 .legend .lt::before { width: 0; height: 0; background: none; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--acc); }
+
+.wavebar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 4px 8px; font-size: 12px; color: var(--dim); border-bottom: 1px solid var(--line); }
+.wavebar button { padding: 1px 8px; } .wavebar input[type=range] { width: 90px; vertical-align: middle; padding: 0; }
+.wavewrap:fullscreen { background: #000; display: flex; flex-direction: column; } .wavewrap:fullscreen #wave { height: auto; flex: 1; }
+.ex { background: #0c1219; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 6px 0; } .ex h4 { margin: 0 0 4px; } .ex p { margin: 4px 0; font-size: 13px; color: var(--dim); }
+body.learner [data-d=patient], body.learner [data-d=examples], body.learner #physics, body.learner .chk { display: none; }
+body.hidep #meas, body.hidep .num.pk .big b { visibility: hidden; }

@@ -45,7 +45,7 @@ export class Sim {
     if (pt.ven) { const { a, b, c, d } = pt.ven; pt.ven.v0 = a + b / (1 + Math.exp(c / d)); }
     this.s = { t: 0, V: 0, pv: 0, ph: 'exp', tPh: 1, tBr: 99, pmus: 0, eff: null, nextEff: 1, vStart: 0, peakFlow: 0,
       br: null, apvP: 10, holdReq: false, ehReq: false, pauseDur: 0, seed: 12345, nBreath: 0, tick: 0, samp: 0, tickN: 0,
-      vdot: 0, pao: this.set.peep, ptr: this.set.peep, cp: 0 };
+      vdot: 0, osc: 0, rev: 0, revCount: 0, pao: this.set.peep, ptr: this.set.peep, cp: 0 };
     this.s.V = this._eqV(this.set.peep);
     this.g = { paco2: 40, pao2: 100, spo2: 98, map: pt.hemo.map0, hr: pt.hemo.hr0, va: 0, shunt: pt.shunt0 };
     this.alv = []; this.breaths = []; this.starts = []; this.efforts = []; this.out = [];
@@ -81,21 +81,35 @@ export class Sim {
 
   _rand() { this.s.seed = (this.s.seed * 1664525 + 1013904223) % 4294967296; return this.s.seed / 4294967296; }
 
+  // Patient effort Pmus(t), cmH2O (inspiratory positive). Two shapes:
+  //  - legacy half-sine of duration drive.tn (used by the calibrated scenarios)
+  //  - rise / hold / decay with smoothstep ramps when drive.rise is set (decay = post-inspiratory relaxation)
+  _pmusAt(t) {
+    const d = this.pt.drive;
+    if (d.rise == null) return d.pmax * Math.sin((Math.PI * t) / d.tn);
+    const ss = (x) => x * x * (3 - 2 * x), hold = d.hold || 0;
+    if (t < d.rise) return d.pmax * ss(t / d.rise);
+    if (t < d.rise + hold) return d.pmax;
+    return d.pmax * (1 - ss((t - d.rise - hold) / d.decay));
+  }
+  _tn() { const d = this.pt.drive; return d.rise == null ? d.tn : d.rise + (d.hold || 0) + d.decay; }
+
   _effort(dt) {
     const s = this.s, d = this.pt.drive;
-    if (d.rate <= 0 || d.pmax <= 0) { s.pmus = 0; s.eff = null; return; }
+    // entrain > 0: reverse triggering, effort is started by the machine breath (see _startBreath), not by its own clock
+    if (d.pmax <= 0 || (d.rate <= 0 && !d.entrain)) { s.pmus = 0; s.eff = null; return; }
     if (!s.eff) {
-      s.pmus = 0; s.nextEff -= dt;
-      if (s.nextEff <= 0) s.eff = { t: 0, trig: false, ex: s.ph === 'exp' };
+      s.pmus = 0;
+      if (d.entrain) { if (s.rev > 0 && (s.rev -= dt) <= 0) s.eff = { t: 0, trig: false, ex: false, p01: this._pmusAt(0.1) }; }
+      else if ((s.nextEff -= dt) <= 0) s.eff = { t: 0, trig: false, ex: s.ph === 'exp', p01: this._pmusAt(0.1) };
       return;
     }
     s.eff.t += dt;
-    const x = s.eff.t / d.tn;
-    if (x >= 1) {
+    if (s.eff.t >= this._tn()) {
       if (s.eff.ex) { this.efforts.push(s.eff.trig); if (this.efforts.length > 10) this.efforts.shift(); }
       s.eff = null; s.pmus = 0;
-      s.nextEff = Math.max(0.1, (60 / d.rate) * (0.94 + 0.12 * this._rand()) - d.tn);
-    } else s.pmus = d.pmax * Math.sin(Math.PI * x);
+      if (!d.entrain) s.nextEff = Math.max(0.1, (60 / d.rate) * (0.94 + 0.12 * this._rand()) - this._tn());
+    } else s.pmus = this._pmusAt(s.eff.t);
   }
 
   _vcFlow(t) {
@@ -129,6 +143,8 @@ export class Sim {
 
     s.V += vdot * DT;
     s.pv = (s.pv + (DT * vdot) / pt.cd) / (1 + DT / (pt.rd * pt.cd));
+    const cd = pt.cardiac;
+    s.osc = cd ? cd.amp * Math.sin((2 * Math.PI * cd.hr / 60) * s.t) : 0; // cardiac oscillation on the flow sensor (not lung volume)
     s.vdot = vdot; s.pao = pao;
     const e = ETT[pt.ett];
     s.ptr = pao - pt.ettMult * (e.k1 * vdot + e.k2 * vdot * Math.abs(vdot)); // tracheal pressure
@@ -155,7 +171,7 @@ export class Sim {
       if (s.tPh >= st.holdDur) { this.ehold = { peepTot: pao, auto: Math.max(0, pao - st.peep), t: s.t }; this._startBreath(false, pel); }
     } else { // exp
       const timer = (st.mode === 'PSV' ? s.tBr >= st.apnea : s.tBr >= 60 / st.rr);
-      const trig = s.tPh > 0.25 && vdot > st.trig / 60;
+      const trig = s.tPh > 0.25 && vdot + s.osc > st.trig / 60;
       if (trig || timer) {
         if (s.ehReq && !trig) { s.ehReq = false; s.ph = 'ehold'; s.tPh = 0; }
         else this._startBreath(trig, pel);
@@ -168,7 +184,7 @@ export class Sim {
 
   _sample() {
     const s = this.s;
-    this.out.push({ t: s.t, paw: s.pao, flow: s.vdot, vol: s.V - s.vStart, ptr: s.ptr, pmus: s.pmus, br: s.nBreath, ph: s.ph, trig: !!(s.br && s.br.trig) });
+    this.out.push({ t: s.t, paw: s.pao, flow: s.vdot + s.osc, vol: s.V - s.vStart, ptr: s.ptr, pmus: s.pmus, br: s.nBreath, ph: s.ph, trig: !!(s.br && s.br.trig) });
     if (this.out.length > 30000) this.out.splice(0, 10000);
   }
 
@@ -184,8 +200,11 @@ export class Sim {
     const s = this.s, st = this.set;
     if (s.br) this._finalize(pelNow);
     if (trig && s.eff) s.eff.trig = true;
+    const p01 = trig && s.eff ? s.eff.p01 : NaN;
+    const dr = this.pt.drive;
+    if (dr.entrain && !trig && ++s.revCount % dr.entrain === 0 && !s.eff) s.rev = dr.revDelay ?? 0.25; // machine breath entrains an effort
     const dbl = trig && s.br && s.tPh < 0.6 && s.ph === 'exp';
-    s.br = { n: ++s.nBreath, t: s.t, trig, dbl: !!dbl, vti: 0, vte: 0, pip: -1e9, minRel: 1e9, pawSum: 0, cnt: 0, pkE: 0, pplat: 0, tI: 0, peak: 0 };
+    s.br = { n: ++s.nBreath, t: s.t, trig, dbl: !!dbl, vti: 0, vte: 0, pip: -1e9, minRel: 1e9, pawSum: 0, cnt: 0, pkE: 0, p01, pplat: 0, tI: 0, peak: 0 };
     s.ph = 'insp'; s.tPh = 0; s.tBr = 0; s.vStart = s.V; s.peakFlow = 0;
     this.starts.push(s.t); if (this.starts.length > 60) this.starts.shift();
   }
@@ -197,7 +216,7 @@ export class Sim {
     const sum = {
       n: b.n, t: b.t, trig: b.trig, dbl: b.dbl, vti: b.vti, vte: b.vte, pip: b.pip, pplat: b.pplat,
       peepTot, autoPeep: Math.max(0, pelNow - st.peep), tI: b.tI, tE: tTot - b.tI, tTot,
-      pmean: b.pawSum / Math.max(1, b.cnt), peak: b.peak, minRel: b.minRel, rcexp: b.pkE > 0.01 ? b.vte / b.pkE : NaN,
+      pmean: b.pawSum / Math.max(1, b.cnt), peak: b.peak, minRel: b.minRel, p01: b.p01, rcexp: b.pkE > 0.01 ? b.vte / b.pkE : NaN,
     };
     this.last = sum; this.breaths.push(sum); if (this.breaths.length > 40) this.breaths.shift();
     // alveolar volume for gas exchange
@@ -296,6 +315,7 @@ export class Sim {
     const pplat = avg(b => b.pplat), peepTot = avg(b => b.peepTot), pip = avg(b => b.pip);
     const eff = this.efforts;
     return {
+      p01: (() => { const x = r.filter((b) => Number.isFinite(b.p01)); return x.length ? x.reduce((a, b) => a + b.p01, 0) / x.length : NaN; })(),
       pip, pplat, peepTot, peepi: avg(b => b.autoPeep), gap: pip - pplat, dp: pplat - peepTot, pmean: avg(b => b.pmean),
       vte, vtPerKg: vte / this.pbw, mv: (vte * rr) / 1000, rr,
       rsbi: vte > 0 ? rr / (vte / 1000) : NaN,

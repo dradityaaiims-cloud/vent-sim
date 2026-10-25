@@ -32,6 +32,13 @@ Add `?instructor=1` to the URL to show model truth next to what the ventilator r
 
 Netlify / Vercel / Cloudflare Pages also work: no build command, publish directory is the repo root (or `_site` contents: `index.html`, `css/`, `js/`).
 
+## Teaching features
+
+- **Examples** (bottom bar): 7 patient-ventilator asynchronies (reverse triggering in PC and VC, ineffective efforts, early and late cycling, breath stacking, auto-triggering), each produced by the engine.
+- **Show Pmus** overlays patient effort; triangles mark patient-triggered breaths; **Freeze** plus click gives a crosshair that reads pressure, flow and volume at one instant; **Window** and **Fullscreen** for projection.
+- **Share link / learner link** (Tools): the whole setup is encoded in the URL, no server. `?learner=1` hides the patient and examples, `&hidep=1` also hides pressure numbers.
+- Measurements include stress index (VC, constant flow) and P0.1.
+
 ## Layout
 
 | Path | What |
@@ -50,4 +57,4 @@ van Diepen et al., Biomed Signal Process Control 118 (2026) 109770 (CC BY 4.0) f
 
 ## Not in this version
 
-SIMV/PSIMV, VS, APRV, DuoPAP, NIV/HFOT, ASV-type and closed-loop modes; two-compartment lung and pendelluft; estimator layer; volumetric capnography; esophageal pressure; weaning/stress-strain panels; Web Worker. Licence not chosen yet.
+SIMV/PSIMV, VS, APRV, DuoPAP, NIV/HFOT, ASV-type and closed-loop modes; two-compartment lung and pendelluft; estimator layer; volumetric capnography; esophageal pressure; weaning/stress-strain panels; Web Worker. Live teaching sessions (needs a server), saved scenario accounts, recruited volume / R-I ratio, airway closure, PAV. Licence not chosen yet.

@@ -4,6 +4,8 @@ import { MODEL_HTML } from './model.js';
 import { fit, lane, range, col } from './draw.js';
 import { drawLung } from './lung.js';
 import { renderLearn } from './learn.js';
+import { ASYN } from './asyn.js';
+import { PRESETS } from './engine/presets.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const h = (tag, attrs = {}, ...kids) => {
@@ -34,6 +36,7 @@ const FREE = {
   normal: { vt: 450, rr: 14, peep: 5, fio2: 0.4, ti: 1.0 },
   copd: { vt: 430, rr: 15, peep: 0, fio2: 0.3, ti: 0.7 },
   ards: { vt: 340, rr: 24, peep: 10, fio2: 0.6, ti: 0.8 },
+  asthma: { vt: 400, rr: 12, peep: 0, fio2: 0.4, ti: 0.8 },
 };
 const sim = new Sim('normal', {}, { ...FREE.normal });
 sim.settle();
@@ -61,9 +64,17 @@ const PT = [
   { k: 'ettMult', label: 'Tube kink / secretions', u: 'x', min: 1, max: 12, step: 0.5 },
   { k: 'drive.rate', label: 'Patient effort rate', u: '/min', min: 0, max: 40, step: 1 },
   { k: 'drive.pmax', label: 'Patient effort strength', kind: 'p', min: 0, max: 25, step: 1 },
+  { k: 'drive.rise', label: 'Effort rise time', u: 's', min: 0.1, max: 1, step: 0.05, shape: true },
+  { k: 'drive.hold', label: 'Effort hold', u: 's', min: 0, max: 1, step: 0.05, shape: true },
+  { k: 'drive.decay', label: 'Effort decay (relaxation)', u: 's', min: 0.1, max: 1.5, step: 0.05, shape: true },
 ];
-const getPt = (k) => (k.startsWith('drive.') ? sim.pt.drive[k.slice(6)] : sim.pt[k]);
-const patchPt = (k, v) => sim.patch(k.startsWith('drive.') ? { drive: { [k.slice(6)]: v } } : { [k]: v });
+const SHAPE_DEF = { rise: 0.3, hold: 0, decay: 0.4 };
+const getPt = (k) => (k.startsWith('drive.') ? sim.pt.drive[k.slice(6)] ?? SHAPE_DEF[k.slice(6)] : sim.pt[k]);
+const patchPt = (k, v) => {
+  if (!k.startsWith('drive.')) return sim.patch({ [k]: v });
+  const f = k.slice(6), d = SHAPE_DEF;
+  sim.patch({ drive: { ...(SHAPE_DEF[f] !== undefined && sim.pt.drive.rise == null ? d : {}), [f]: v } }); // first touch switches from half-sine to the shaped effort
+};
 
 function slider(c, get, set) {
   const sc = c.scale || 1, kk = c.kind === 'p' ? kp() : 1;
@@ -91,7 +102,7 @@ function buildControls() {
   const add = (box, r) => { ctlRows.push(r); box.append(r); };
   if (!scn) {
     const sel = h('select', { 'aria-label': 'Lung type', onchange: (e) => loadFree(e.target.value) },
-      ...['normal', 'copd', 'ards'].map((k) => h('option', { value: k, selected: k === sim.key }, { normal: 'Normal lungs', copd: 'COPD', ards: 'ARDS (moderate)' }[k])));
+      ...['normal', 'copd', 'asthma', 'ards'].map((k) => h('option', { value: k, selected: k === sim.key }, { normal: 'Normal lungs', copd: 'COPD', asthma: 'Asthma (severe)', ards: 'ARDS (moderate)' }[k])));
     dp.append(h('div', { class: 'row' }, h('label', {}, 'Lung type'), h('span'), sel));
     const sex = h('select', { 'aria-label': 'Sex', onchange: (e) => { sim.patch({ sex: e.target.value }); pbwOut(); } }, h('option', { value: 'M', selected: sim.pt.sex === 'M' }, 'Male'), h('option', { value: 'F', selected: sim.pt.sex === 'F' }, 'Female'));
     const ht = h('input', { type: 'number', min: 130, max: 210, value: sim.pt.height, 'aria-label': 'Height cm', onchange: (e) => { sim.patch({ height: +e.target.value }); pbwOut(); } });
@@ -121,6 +132,10 @@ function buildControls() {
     ...[[0, 'Pause'], [1, '1x'], [5, '5x'], [20, '20x'], [60, '60x']].map(([v, t]) => h('button', { 'data-speed': v, class: v === speed ? 'on' : '', onclick: () => setSpeed(v) }, t)),
     h('button', { onclick: resetAll }, 'Reset')));
   dt.append(h('p', { id: 'clock', class: 'muted' }));
+  dt.append(h('h3', {}, 'Share this setup'), h('p', { class: 'muted' }, 'Copies a link that opens the simulator with this patient and these settings. No account or server needed. The learner link hides the patient and example panels.'),
+    h('div', { class: 'btns' }, h('button', { onclick: () => copyLink(false) }, 'Copy link'), h('button', { onclick: () => copyLink(true) }, 'Copy learner link'), h('button', { onclick: () => copyLink(true, true) }, 'Learner link, hide pressures')));
+  const dx = $('#d-examples'); dx.replaceChildren(h('p', { class: 'muted' }, 'Each example loads a patient and settings that reproduce an asynchrony on the real engine. Turn on Show Pmus above the waveforms to see the patient effort. Triangles mark patient-triggered breaths. Details are in Learn.'));
+  for (const a of ASYN) dx.append(h('div', { class: 'ex' }, h('h4', {}, a.title), h('p', {}, a.what), h('div', { class: 'btns' }, h('button', { class: 'primary', onclick: () => { loadCustom(a.key, a.mods, a.set, a.title); $('#w-pmus').checked = true; openDrawer(''); } }, 'Load example'), h('button', { onclick: () => { alert(`What to look for:\n${a.look}\n\nWhat to do:\n${a.fix}`); } }, 'What to look for'))));
   refreshControls();
 }
 function refreshControls() {
@@ -152,7 +167,7 @@ function renderEvents() { $('#d-events').replaceChildren(events.length ? h('tabl
 
 // ---------- drawer / bottom bar ----------
 let curDrawer = '';
-const DRAWERS = { modes: ['Modes', 'd-modes'], controls: ['Controls', 'd-controls'], patient: ['Patient', 'd-patient'], tools: ['Tools', 'd-tools'], events: ['Events', 'd-events'], alarms: ['Alarms', 'd-alarms'] };
+const DRAWERS = { modes: ['Modes', 'd-modes'], controls: ['Controls', 'd-controls'], patient: ['Patient', 'd-patient'], tools: ['Tools', 'd-tools'], examples: ['Examples: patient-ventilator asynchrony', 'd-examples'], events: ['Events', 'd-events'], alarms: ['Alarms', 'd-alarms'] };
 function openDrawer(name) {
   curDrawer = name || '';
   $('#drawer').hidden = !name;
@@ -161,6 +176,11 @@ function openDrawer(name) {
   if (name === 'events') renderEvents();
 }
 
+function loadCustom(key, mods, set, label) {
+  scn = null; $('#scbar').hidden = true;
+  sim.load(key, mods, { ...DEFAULTS, ...set }); sim.settle(); sim.rec = true; speed = 1;
+  clearTraces(); buildControls(); if (label) flash(`Loaded: ${label}`);
+}
 function loadFree(key) {
   sim.load(key, {}, { ...DEFAULTS, ...FREE[key] }); sim.settle(); sim.rec = true;
   clearTraces(); buildControls();
@@ -168,10 +188,37 @@ function loadFree(key) {
 function clearTraces() { wbuf = []; loops = { cur: [], prev: [], ref: loops.ref, br: -1 }; sim.out.length = 0; abgHist = []; }
 function resetAll() { if (scn) startScenario(scn.sc); else loadFree(sim.key); }
 
+// ---------- share links ----------
+function copyLink(learner, hidep) {
+  const mods = {};
+  for (const k of Object.keys(sim.pt)) if (k !== 'ven' && JSON.stringify(sim.pt[k]) !== JSON.stringify(PRESETS[sim.key][k])) mods[k] = sim.pt[k];
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify({ k: sim.key, m: mods, s: sim.set }))));
+  const url = `${location.origin}${location.pathname}${learner ? '?learner=1' + (hidep ? '&hidep=1' : '') : ''}#s=${enc}`;
+  (navigator.clipboard?.writeText(url) ?? Promise.reject()).then(() => flash('Link copied'), () => prompt('Copy this link', url));
+}
+function loadFromHash() {
+  const m = location.hash.match(/^#s=(.+)$/); if (!m) return false;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); if (!PRESETS[o.k]) return false; loadCustom(o.k, o.m || {}, o.s || {}, 'shared setup'); return true; } catch { return false; }
+}
+function stressIndex() { // fit Paw = a*t^b + c over constant-flow inspiration; b = stress index
+  const p = loops.prev.filter((s) => s.ph === 'insp');
+  if (sim.set.mode !== 'VC' || sim.set.flow !== 'square' || p.length < 20 || sim.last?.trig) return NaN;
+  const t0 = p[0].t, pts = p.slice(3).map((q) => [q.t - t0 + 0.001, q.paw]);
+  let best = null;
+  for (let b = 0.5; b <= 1.8; b += 0.01) {
+    const x = pts.map((q) => q[0] ** b), y = pts.map((q) => q[1]), n = x.length;
+    const mx = x.reduce((a, v) => a + v, 0) / n, my = y.reduce((a, v) => a + v, 0) / n;
+    let sxx = 0, sxy = 0; for (let i = 0; i < n; i++) { sxx += (x[i] - mx) ** 2; sxy += (x[i] - mx) * (y[i] - my); }
+    const k = sxy / sxx; let sse = 0; for (let i = 0; i < n; i++) sse += (y[i] - my - k * (x[i] - mx)) ** 2;
+    if (!best || sse < best.sse) best = { b, sse };
+  }
+  return best.b;
+}
+
 // ---------- monitor ----------
 function renderMonitor(mon, alarms) {
   const l = sim.last, st = sim.set, m = sim.metrics();
-  const num = (set, big, unit, name, al) => h('div', { class: 'num' + (al ? ' alarm' : '') }, h('div', { class: 'set' }, ...set.map((x) => h('div', {}, String(x)))), h('div', { class: 'big' }, h('b', {}, big), h('span', {}, `${name} ${unit}`)));
+  const num = (set, big, unit, name, al) => h('div', { class: 'num' + (al ? ' alarm' : '') + (name === 'Ppeak' ? ' pk' : '') }, h('div', { class: 'set' }, ...set.map((x) => h('div', {}, String(x)))), h('div', { class: 'big' }, h('b', {}, big), h('span', {}, `${name} ${unit}`)));
   $('#lcol').replaceChildren(
     num([fp(40), fp(st.peep)], fp(l?.pip), U.p, 'Ppeak', alarms.has('pip')),
     num([], n0(m.mv, 1), 'L/min', 'MinVol'),
@@ -205,7 +252,7 @@ function renderMeasured() {
   const fresh = (x) => x && sim.t - x.t < 120;
   const pplat = fresh(hold) ? hold.pplat : NaN, peepTot = fresh(eh) ? eh.peepTot : NaN;
   const base = Number.isFinite(peepTot) ? peepTot : st.peep;
-  const vt = l ? l.vti * 1000 : NaN;
+  const vt = l ? l.vti * 1000 : NaN, si = stressIndex();
   const rows = [
     ['Peak pressure', fp(l?.pip), U.p],
     ['Plateau', fresh(hold) ? fp(pplat) : '--', `${U.p} <small>${fresh(hold) ? `hold ${hold.dur} s` : 'do an inspiratory hold'}</small>`],
@@ -219,6 +266,8 @@ function renderMeasured() {
     ['Static compliance', fresh(hold) ? n0(vt / (pplat - base)) : '--', 'mL/' + U.p],
     ['Resistance', fresh(hold) && st.mode === 'VC' && l ? n0((l.pip - pplat) / l.peak) : '--', U.p + '/L/s'],
     ['RSBI', n0(m.rsbi), 'f / VT(L)'],
+    ['P0.1 (drive)', fp(m.p01, 1), U.p + ' <small>patient-triggered breaths</small>'],
+    ['Stress index', Number.isFinite(si) ? n0(si, 2) : '--', `<small>${Number.isFinite(si) ? (si < 0.9 ? 'recruiting' : si > 1.1 ? 'overdistension' : 'linear') : 'VC square flow, passive'}</small>`],
   ];
   $('#meas').innerHTML = rows.map(([a, b, c]) => `<tr><td>${a}</td><td>${b} <small>${c}</small></td></tr>`).join('');
   if ($('#physics').checked) renderPhysics();
@@ -246,17 +295,21 @@ function renderTruth() {
 }
 
 // ---------- canvases ----------
+let frozen = false, frozenBuf = [], winSec = 12, cross = null;
 function drawWave() {
-  const c = $('#wave'), [g, w, hh] = fit(c), W = 12;
+  const c = $('#wave'), [g, w, hh] = fit(c), W = winSec;
   $('#ffnote').hidden = speed <= 5;
-  if (speed > 5 || !wbuf.length) return;
+  const buf = frozen ? frozenBuf : wbuf;
+  if (speed > 5 && !frozen || !buf.length) return;
   const lh = [hh * 0.38, hh * 0.38, hh * 0.24];
-  const t1 = wbuf[wbuf.length - 1].t, X = (t) => ((t - (t1 - W)) / W) * w;
-  const vis = wbuf.filter((s) => s.t > t1 - W);
+  const t1 = buf[buf.length - 1].t, X = (t) => ((t - (t1 - W)) / W) * w;
+  const vis = buf.filter((s) => s.t > t1 - W);
   const pmax = Math.max(30, Math.ceil((Math.max(...vis.map((s) => s.paw)) + 2) / 10) * 10);
   const fmx = Math.max(60, Math.ceil(Math.max(...vis.map((s) => Math.abs(s.flow * 60))) / 30) * 30);
   const vmx = Math.max(500, Math.ceil(Math.max(...vis.map((s) => s.vol * 1000)) / 250) * 250);
-  lane(g, 0, 0, w, lh[0], -5, pmax, col('--p'), `Paw (${U.p})`, vis.map((s) => [X(s.t), s.paw]), range(0, pmax, pmax > 60 ? 20 : 10), (t) => fp(t));
+  const peep = sim.set.peep;
+  lane(g, 0, 0, w, lh[0], -5, pmax, col('--p'), `Paw (${U.p})`, vis.map((s) => [X(s.t), s.paw]), range(0, pmax, pmax > 60 ? 20 : 10), (t) => fp(t),
+    $('#w-pmus').checked ? [{ color: col('--acc'), pts: vis.map((s) => [X(s.t), peep - s.pmus]) }] : []);
   // triangle at the start of every patient-triggered breath
   g.fillStyle = col('--acc');
   vis.forEach((sm, i) => {
@@ -266,6 +319,12 @@ function drawWave() {
   });
   lane(g, 0, lh[0], w, lh[1], -fmx, fmx, col('--f'), 'Flow (L/min)', vis.map((s) => [X(s.t), s.flow * 60]), [-fmx / 2, 0, fmx / 2], (t) => t.toFixed(0));
   lane(g, 0, lh[0] + lh[1], w, lh[2], 0, vmx, col('--v'), 'Volume (mL)', vis.map((s) => [X(s.t), Math.max(0, s.vol * 1000)]), [0, vmx / 2], (t) => t.toFixed(0));
+  const out = $('#w-cross');
+  if (frozen && cross != null) { // crosshair: exact values at one instant across all traces
+    const tt = t1 - W + cross * W, sm = vis.reduce((a, q) => (Math.abs(q.t - tt) < Math.abs(a.t - tt) ? q : a), vis[0]);
+    g.strokeStyle = '#ffffff99'; g.lineWidth = 1; g.beginPath(); g.moveTo(X(sm.t), 0); g.lineTo(X(sm.t), hh); g.stroke();
+    out.textContent = `t ${(sm.t - t1).toFixed(2)} s | Paw ${fp(sm.paw, 1)} ${U.p} | Flow ${(sm.flow * 60).toFixed(1)} L/min | Vol ${(sm.vol * 1000).toFixed(0)} mL${sm.pmus > 0.05 ? ` | Pmus ${fp(sm.pmus, 1)}` : ''}`;
+  } else out.textContent = frozen ? 'Click the waveform to place a crosshair' : '';
 }
 function drawLoop(canvas, kind) {
   const [g, w, hh] = fit(canvas), m = 34;
@@ -434,7 +493,7 @@ function frame(now) {
     }
     const out = sim.out.splice(0);
     feedLoops(out);
-    if (speed <= 5) { wbuf.push(...out); const t1 = sim.t; while (wbuf.length && wbuf[0].t < t1 - 14) wbuf.shift(); }
+    if (speed <= 5) { wbuf.push(...out); const t1 = sim.t; while (wbuf.length && wbuf[0].t < t1 - 32) wbuf.shift(); }
     if (!$('#tab-sim').hidden) { drawWave(); drawLoop($('#loop-pv'), 'pv'); drawLoop($('#loop-fv'), 'fv'); drawLung($('#lung'), sim); }
     acc += dt;
     if (acc > 0.25) { acc = 0; tick(); }
@@ -462,6 +521,10 @@ for (const [id, k] of [['u-p', 'p'], ['u-g', 'g'], ['u-t', 't']]) {
   s.addEventListener('change', () => { U[k] = s.value; store.set('vsim-units', U); buildControls(); showABGIfOpen(); });
 }
 const showABGIfOpen = () => { if ($('#abg-dlg').open) showABG(); };
+$('#w-freeze').onclick = (e) => { frozen = !frozen; frozenBuf = wbuf.slice(); cross = null; e.target.textContent = frozen ? 'Resume' : 'Freeze'; };
+$('#w-win').oninput = (e) => { winSec = +e.target.value; };
+$('#w-full').onclick = () => { const el = $('.wavewrap'); if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen?.(); };
+$('#wave').addEventListener('click', (e) => { if (frozen) cross = e.offsetX / e.target.clientWidth; });
 $('#loop-save').onclick = () => { loops.ref = (loops.prev.length ? loops.prev : loops.cur).slice(); };
 $('#loop-clear').onclick = () => { loops.ref = []; };
 $('#r-modes').onclick = () => openDrawer('modes');
@@ -473,10 +536,15 @@ $('#b-ih').onclick = () => { if (sim.set.mode === 'VC') { sim.s.holdReq = true; 
 $('#b-eh').onclick = () => { sim.s.ehReq = true; flash('Expiratory hold at the end of the next exhalation'); };
 $('#b-abg').onclick = getABG;
 $('#physics').onchange = (e) => { $('#phys').hidden = !e.target.checked; if (e.target.checked) renderPhysics(); };
+const QS = new URLSearchParams(location.search);
+if (QS.get('learner') === '1') document.body.classList.add('learner');
+if (QS.get('hidep') === '1') document.body.classList.add('hidep');
 if (INSTRUCTOR) { $('#inst-note').hidden = false; $('#truth').hidden = false; }
 openDrawer('');
 $('#tab-model').innerHTML = MODEL_HTML;
 sim.rec = true;
 buildControls();
 requestAnimationFrame(frame);
+loadFromHash();
+window.addEventListener('hashchange', loadFromHash);
 window.__vent = { sim, get scn() { return scn; } }; // handy for debugging in the console

@@ -34,6 +34,7 @@
       <div class="lcol" id="lcol" aria-label="Main measurements"></div>
       <div class="mid">
         <div class="wavewrap">
+          <div class="wavebar"><button id="w-freeze">Freeze</button> <label>Window <input type="range" id="w-win" min="6" max="30" value="12" aria-label="Seconds shown"></label> <label><input type="checkbox" id="w-pmus"> Show Pmus</label> <button id="w-full">Fullscreen</button> <span id="w-cross" class="muted"></span></div>
           <canvas id="wave" aria-label="Pressure and flow waveforms" role="img"></canvas>
           <div id="ffnote" class="ffnote" hidden>Fast-forward: waveforms paused above 5x</div>
           <ul class="legend"><li class="lp">Airway pressure</li><li class="lf">Flow</li><li class="lv">Volume (small)</li><li class="lt">Patient-triggered breath</li></ul>
@@ -51,6 +52,7 @@
           <div id="d-controls"></div>
           <div id="d-patient"></div>
           <div id="d-tools"></div>
+          <div id="d-examples"></div>
           <div id="d-events"></div>
           <div id="d-alarms"></div>
         </div>
@@ -68,7 +70,7 @@
       </div>
     </div>
     <nav class="bbar" aria-label="Screen sections">
-      <button data-d="" class="on">Monitoring</button><button data-d="tools">Tools</button><button data-d="events">Events</button><button data-d="patient">Patient</button>
+      <button data-d="" class="on">Monitoring</button><button data-d="tools">Tools</button><button data-d="events">Events</button><button data-d="examples">Examples</button><button data-d="patient">Patient</button>
     </nav>
     <div class="panel under">
       <div class="two">

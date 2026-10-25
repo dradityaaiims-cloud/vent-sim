@@ -49,4 +49,13 @@ export const PRESETS = {
     hemo: { map0: 80, hr0: 90, sens: 1.2 },
     temp: 38,
   },
+  asthma: {
+    ...BASE, label: 'Asthma (severe)', sex: 'F', height: 165, weight: 65,
+    cl: 0.05,                // [CALC] Crs 40 mL/cmH2O in series with Ccw 0.2 (RT Maven-style preset: C 40, R 30; ASSUMPTION)
+    k1aw: 28.7,              // Rrs about 30 incl. ETT 8 mm
+    qmax: 0.09, pcrit: 6,    // severe expiratory flow limitation [ASSUMPTION]
+    vdAlvFrac: 0.3, shunt0: 0.1, shuntRecruit: 0, vq: 15,
+    hco3ref: 24, paco2ref: 40, vco2: 200,
+    hemo: { map0: 85, hr0: 105, sens: 1.2 },
+  },
 };

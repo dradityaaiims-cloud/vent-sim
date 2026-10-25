@@ -25,9 +25,14 @@ Source: van Diepen et al., Biomed Signal Process Control 118 (2026) 109770 (CC B
 <li>ARDS Venegas parameters are chosen to hit target compliance and shunt; no published typical a/b/c/d exist. Recruitment is modeled as a PEEP-dependent shunt reduction, overdistension as extra dead space above a plateau of 30. Both are assumptions. Shunt, compliance and chest wall values lean partly on COVID-ARDS series.</li>
 <li><b>Single lung compartment.</b> Pendelluft, regional overdistension, sequential-emptying capnography, esophageal pressure, leak/NIV, APRV, SIMV, ASV-type and closed-loop modes are not in this version.</li>
 <li>Hemodynamics are a simple venous-return penalty from mean airway pressure and auto-PEEP. The ventilator-reported compliance and resistance use only a plateau hold, not the full estimator layer.</li>
-<li>Patient effort is a half-sine of fixed amplitude on its own clock. Triggering is flow-based only.</li>
+<li>Patient effort is either a half-sine or a shaped waveform (smoothstep rise, hold and decay) of fixed amplitude on its own clock. It does not yet respond to the level of ventilator support. Triggering is flow-based only (no pressure trigger).</li>
+<li>Reverse triggering is modeled as an effort that starts a fixed delay after a machine breath. Cardiac oscillation is a sinusoid added to the flow signal used for trigger detection. Both are teaching approximations, not fitted to patient data.</li>
+<li>Not modeled: recruited volume and the recruitment-to-inflation ratio, airway closure and opening pressure, proportional assist ventilation, upper-inflection-point overdistension for linear lungs, natural breath-to-breath variability. The stress index is computed from the simulated pressure curve and is only meaningful for passive volume control with constant flow.</li>
+<li>The asthma lung type (compliance 40 mL/cmH2O, resistance about 30, severe flow limitation) is an assumption chosen to look like a severe exacerbation.</li>
 <li>Educational tool, not for assessment or exams. No data leaves your browser. Progress is stored in <code>localStorage</code> only.</li>
 </ul>
+<h2>Related work</h2>
+<p>Other browser ventilator simulators exist (for example the RT Maven simulator by T. Piraino, which has a strong asynchrony and teaching-session focus). This app was designed independently; its content and code are original, and feature ideas such as asynchrony examples, share links and learner mode follow common teaching practice. Please cite the sources listed in the README for the physiology.</p>
 <h2>Instructor view</h2>
 <p>Add <code>?instructor=1</code> to the address. This shows model truth next to what the ventilator reports. It has no passcode and stores nothing.</p>
 </div>`;
