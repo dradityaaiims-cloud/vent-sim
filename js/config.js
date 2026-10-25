@@ -1,6 +1,6 @@
 // Site settings you may edit. Nothing here is secret: a Cloudflare Web Analytics token and a Google Form link are public by design.
 export const CONFIG = {
-  version: '0.2.0',
+  version: '0.2.1',
   year: 2026,
   // Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site > copy the "token" from the snippet. Empty = analytics off.
   cfToken: '5e95195d75bf465bb2c04490600eb6fd',

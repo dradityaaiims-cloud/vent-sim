@@ -2,8 +2,9 @@ cff-version: 1.2.0
 message: "If you use this software in teaching or research, please cite it as below."
 title: "Dr. Singh's Vent Sim: an open educational mechanical ventilator simulator"
 type: software
-version: 0.2.0
-date-released: 2026-10-24
+license: MIT
+version: 0.2.1
+date-released: 2026-10-25
 authors:
   - family-names: Singh
     given-names: Aditya

@@ -67,7 +67,7 @@ ${ME.bio.map((p) => `<p>${esc(p)}</p>`).join('')}
 <li><b>Funding and conflicts of interest.</b> None declared.</li>
 <li><b>Software development.</b> The software was developed with AI coding assistance (Claude, by Anthropic), directed by the author, and is covered by automated tests of the physics and scenarios.</li>
 <li><b>Views.</b> The views here are my own and do not represent my employer or training program.</li>
-<li><b>Licence.</b> All rights reserved unless a licence is stated in the repository.</li>
+<li><b>Licence.</b> The software is open source under the MIT licence. The teaching content (Learn tab, cases, quiz and survey materials) is available under Creative Commons Attribution 4.0 (CC BY 4.0). Please credit and cite as below.</li>
 </ul>
 
 <h3>Privacy</h3>
