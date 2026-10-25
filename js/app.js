@@ -257,6 +257,13 @@ function drawWave() {
   const fmx = Math.max(60, Math.ceil(Math.max(...vis.map((s) => Math.abs(s.flow * 60))) / 30) * 30);
   const vmx = Math.max(500, Math.ceil(Math.max(...vis.map((s) => s.vol * 1000)) / 250) * 250);
   lane(g, 0, 0, w, lh[0], -5, pmax, col('--p'), `Paw (${U.p})`, vis.map((s) => [X(s.t), s.paw]), range(0, pmax, pmax > 60 ? 20 : 10), (t) => fp(t));
+  // triangle at the start of every patient-triggered breath
+  g.fillStyle = col('--acc');
+  vis.forEach((sm, i) => {
+    if (!sm.trig || (i && vis[i - 1].br === sm.br)) return;
+    const x = X(sm.t), y = lh[0] - 4;
+    g.beginPath(); g.moveTo(x, y - 11); g.lineTo(x - 6, y); g.lineTo(x + 6, y); g.closePath(); g.fill();
+  });
   lane(g, 0, lh[0], w, lh[1], -fmx, fmx, col('--f'), 'Flow (L/min)', vis.map((s) => [X(s.t), s.flow * 60]), [-fmx / 2, 0, fmx / 2], (t) => t.toFixed(0));
   lane(g, 0, lh[0] + lh[1], w, lh[2], 0, vmx, col('--v'), 'Volume (mL)', vis.map((s) => [X(s.t), Math.max(0, s.vol * 1000)]), [0, vmx / 2], (t) => t.toFixed(0));
 }

@@ -168,7 +168,7 @@ export class Sim {
 
   _sample() {
     const s = this.s;
-    this.out.push({ t: s.t, paw: s.pao, flow: s.vdot, vol: s.V - s.vStart, ptr: s.ptr, pmus: s.pmus, br: s.nBreath, ph: s.ph });
+    this.out.push({ t: s.t, paw: s.pao, flow: s.vdot, vol: s.V - s.vStart, ptr: s.ptr, pmus: s.pmus, br: s.nBreath, ph: s.ph, trig: !!(s.br && s.br.trig) });
     if (this.out.length > 30000) this.out.splice(0, 10000);
   }
 
