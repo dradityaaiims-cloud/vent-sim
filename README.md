@@ -40,7 +40,8 @@ Netlify / Vercel / Cloudflare Pages also work: no build command, publish directo
 | `js/engine/presets.js` | Patient parameters, each tagged `[SRC]` / `[CALC]` / `[ASSUMPTION]` |
 | `js/engine/gas.js` | Alveolar gas, shunt, Severinghaus, Henderson-Hasselbalch |
 | `js/scenarios.js` | The 10 cases as data (goals, actions, questions, hints) |
-| `js/app.js`, `css/` | UI |
+| `js/app.js`, `js/lung.js`, `js/draw.js`, `css/` | UI: ventilator-style screen, animated lungs, loops |
+| `js/learn.js` | Learn tab: settings, targets, strategies, pearls, engine-generated waveform gallery |
 | `tests/` | Analytic, reference-patient and scenario regression tests |
 
 ## Model sources

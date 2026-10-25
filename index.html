@@ -13,6 +13,7 @@
   <nav role="tablist" aria-label="Sections">
     <button role="tab" data-tab="sim" aria-selected="true">Simulator</button>
     <button role="tab" data-tab="scn" aria-selected="false">Scenarios</button>
+    <button role="tab" data-tab="learn" aria-selected="false">Learn</button>
     <button role="tab" data-tab="model" aria-selected="false">Model &amp; limits</button>
   </nav>
   <div class="units" aria-label="Units">
@@ -29,35 +30,64 @@
 <main>
   <section id="tab-sim" role="tabpanel">
     <div id="scbar" class="scbar" hidden></div>
-    <div class="grid">
-      <aside class="panel" id="controls" aria-label="Ventilator and patient controls"></aside>
-      <div class="center">
-        <div id="monitor" class="monitor" aria-live="off"></div>
-        <div id="alarms" class="alarms" role="status" aria-live="polite"></div>
+    <div class="screen">
+      <div class="lcol" id="lcol" aria-label="Main measurements"></div>
+      <div class="mid">
         <div class="wavewrap">
-          <canvas id="wave" aria-label="Pressure, flow and volume waveforms" role="img"></canvas>
+          <canvas id="wave" aria-label="Pressure and flow waveforms" role="img"></canvas>
           <div id="ffnote" class="ffnote" hidden>Fast-forward: waveforms paused above 5x</div>
-          <ul class="legend"><li class="lp">Airway pressure</li><li class="lf">Flow</li><li class="lv">Volume</li></ul>
+          <ul class="legend"><li class="lp">Airway pressure</li><li class="lf">Flow</li><li class="lv">Volume (small)</li></ul>
+        </div>
+        <div class="lower">
+          <div class="pane"><h4>Lungs</h4><canvas id="lung" aria-label="Animated lungs" role="img"></canvas></div>
+          <div class="pane"><h4>P-V loop <span><button id="loop-save" title="Save the last loop as a dashed reference">Save ref</button> <button id="loop-clear">Clear</button></span></h4><canvas id="loop-pv" aria-label="Pressure-volume loop" role="img"></canvas></div>
+          <div class="pane"><h4>Flow-volume loop</h4><canvas id="loop-fv" aria-label="Flow-volume loop" role="img"></canvas></div>
+        </div>
+        <div id="strip" class="strip" aria-label="Other measurements"></div>
+        <div id="alarms" class="alarms" role="status" aria-live="polite"></div>
+        <div id="drawer" class="drawer" hidden>
+          <div class="dhead"><b id="dtitle"></b><button id="dclose" aria-label="Close panel">Close</button></div>
+          <div id="d-modes"></div>
+          <div id="d-controls"></div>
+          <div id="d-patient"></div>
+          <div id="d-tools"></div>
+          <div id="d-events"></div>
+          <div id="d-alarms"></div>
         </div>
       </div>
-      <aside class="panel" id="right" aria-label="Loops and measurements">
-        <div class="loophead">
-          <select id="loop-kind" aria-label="Loop type"><option value="pv">P-V loop</option><option value="fv">Flow-volume loop</option></select>
-          <button id="loop-save" title="Save the last loop as a dashed reference">Save ref</button>
-          <button id="loop-clear" title="Clear reference">Clear</button>
+      <div class="rcol" id="rcol" aria-label="Setpoints">
+        <button id="r-modes" class="rbtn">Modes<small id="r-mode"></small></button>
+        <div id="dials" class="dials"></div>
+        <button id="r-controls" class="rbtn hl">Controls</button>
+        <button id="r-alarms" class="rbtn">Alarms</button>
+        <div class="qb">
+          <button id="b-ih" title="Volume control only: pause at end of inspiration to read plateau">Insp hold</button>
+          <button id="b-eh" title="Close the circuit at end of expiration to read total PEEP">Exp hold</button>
+          <button id="b-abg" class="primary">Get ABG</button>
         </div>
-        <canvas id="loop" aria-label="Pressure-volume or flow-volume loop" role="img"></canvas>
-        <table id="meas" class="meas"></table>
-        <label class="chk"><input type="checkbox" id="physics"> Show the physics</label>
-        <div id="phys" class="phys" hidden></div>
-        <div id="truth" class="phys" hidden></div>
-      </aside>
+      </div>
+    </div>
+    <nav class="bbar" aria-label="Screen sections">
+      <button data-d="" class="on">Monitoring</button><button data-d="tools">Tools</button><button data-d="events">Events</button><button data-d="patient">Patient</button>
+    </nav>
+    <div class="panel under">
+      <div class="two">
+        <div><h3>Measurements (after holds)</h3><table id="meas" class="meas"></table></div>
+        <div>
+          <label class="chk"><input type="checkbox" id="physics"> Show the physics</label>
+          <div id="phys" class="phys" hidden></div>
+          <div id="truth" class="phys" hidden></div>
+          <div id="modeinfo" class="phys"></div>
+        </div>
+      </div>
     </div>
   </section>
 
   <section id="tab-scn" role="tabpanel" hidden></section>
+  <section id="tab-learn" role="tabpanel" hidden></section>
   <section id="tab-model" role="tabpanel" hidden></section>
 </main>
+<div id="toast" class="toast" aria-live="polite"></div>
 
 <dialog id="abg-dlg" aria-labelledby="abg-title">
   <h2 id="abg-title">Arterial blood gas</h2>

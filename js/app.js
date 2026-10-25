@@ -1,6 +1,9 @@
 import { Sim, DEFAULTS, ETT, pbw } from './engine/engine.js';
 import { SCENARIOS, evalGoals, loadScenario } from './scenarios.js';
 import { MODEL_HTML } from './model.js';
+import { fit, lane, range, col } from './draw.js';
+import { drawLung } from './lung.js';
+import { renderLearn } from './learn.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const h = (tag, attrs = {}, ...kids) => {
@@ -35,7 +38,7 @@ const FREE = {
 const sim = new Sim('normal', {}, { ...FREE.normal });
 sim.settle();
 let speed = 1, scn = null, wbuf = [], loops = { cur: [], prev: [], ref: [], br: -1 };
-let abgHist = [], abgBusy = false;
+let abgHist = [], abgBusy = false, prevAlarms = new Set();
 const prog = store.get('vsim-prog', { done: {}, streak: 0 });
 
 // ---------- controls ----------
@@ -74,60 +77,89 @@ function slider(c, get, set) {
   return row;
 }
 
+let ctlRows = [];
+const MODE_INFO = {
+  VC: ['VC-CMV: volume control', 'You set VT, rate and flow; pressure is the result. Delivered volume is guaranteed, so pressures rise if compliance falls or resistance rises. Time-cycled. Patient triggers add full breaths.'],
+  PC: ['PC-CMV: pressure control', 'You set pressure and Ti; volume is the result. Flow decelerates as the lung fills. Falling compliance or rising resistance shows up as a falling VT: watch exhaled volume.'],
+  APV: ['APVcmv: adaptive pressure control', 'Pressure control whose pressure is adjusted breath by breath (max 3 cmH2O each) to hit the target VT. It can quietly raise pressure and hide a deterioration: watch the pressure trend. Generic implementation.'],
+  PSV: ['SPONT: pressure support / CPAP', 'The patient triggers and sets the rate; each breath gets the set support pressure and ends when flow falls to the cycle-off %. Apnea backup after 20 s. PS 0 = CPAP.'],
+};
 function buildControls() {
-  const box = $('#controls'); box.replaceChildren();
-  const rows = [];
+  const dv = $('#d-controls'), dp = $('#d-patient'), dt = $('#d-tools'), dm = $('#d-modes');
+  [dv, dp, dt, dm].forEach((d) => d.replaceChildren());
+  ctlRows = [];
+  const add = (box, r) => { ctlRows.push(r); box.append(r); };
   if (!scn) {
-    box.append(h('h2', {}, 'Patient'));
     const sel = h('select', { 'aria-label': 'Lung type', onchange: (e) => loadFree(e.target.value) },
       ...['normal', 'copd', 'ards'].map((k) => h('option', { value: k, selected: k === sim.key }, { normal: 'Normal lungs', copd: 'COPD', ards: 'ARDS (moderate)' }[k])));
-    box.append(h('div', { class: 'row' }, h('label', {}, 'Lung type'), h('span'), sel));
+    dp.append(h('div', { class: 'row' }, h('label', {}, 'Lung type'), h('span'), sel));
     const sex = h('select', { 'aria-label': 'Sex', onchange: (e) => { sim.patch({ sex: e.target.value }); pbwOut(); } }, h('option', { value: 'M', selected: sim.pt.sex === 'M' }, 'Male'), h('option', { value: 'F', selected: sim.pt.sex === 'F' }, 'Female'));
     const ht = h('input', { type: 'number', min: 130, max: 210, value: sim.pt.height, 'aria-label': 'Height cm', onchange: (e) => { sim.patch({ height: +e.target.value }); pbwOut(); } });
     const wt = h('input', { type: 'number', min: 30, max: 200, value: sim.pt.weight, 'aria-label': 'Weight kg', onchange: (e) => sim.patch({ weight: +e.target.value }) });
     const pb = h('output');
     function pbwOut() { pb.textContent = `PBW ${sim.pbw.toFixed(1)} kg`; }
     pbwOut();
-    box.append(h('div', { class: 'row' }, h('label', {}, 'Sex / height cm / weight kg'), pb, h('div', { class: 'btns', style: 'grid-column:1/-1;margin:0' }, sex, ht, wt)));
+    dp.append(h('div', { class: 'row' }, h('label', {}, 'Sex / height cm / weight kg'), pb, h('div', { class: 'btns', style: 'grid-column:1/-1;margin:0' }, sex, ht, wt)));
     const ett = h('select', { 'aria-label': 'ETT size', onchange: (e) => sim.patch({ ett: +e.target.value }) }, ...Object.keys(ETT).map((k) => h('option', { value: k, selected: +k === sim.pt.ett }, `ETT ${k} mm`)));
-    box.append(h('div', { class: 'row' }, h('label', {}, 'Endotracheal tube'), h('span'), ett));
-    for (const c of PT) { const r = slider(c, () => getPt(c.k), (v) => patchPt(c.k, v)); rows.push(r); box.append(r); }
-  } else box.append(h('p', { class: 'muted' }, 'Scenario in progress: the patient is fixed. Adjust the ventilator and use the case actions above.'));
-  box.append(h('h2', {}, 'Ventilator'));
+    dp.append(h('div', { class: 'row' }, h('label', {}, 'Endotracheal tube'), h('span'), ett));
+    for (const c of PT) add(dp, slider(c, () => getPt(c.k), (v) => patchPt(c.k, v)));
+  } else dp.append(h('p', { class: 'muted' }, 'Scenario in progress: the patient is fixed. Adjust the ventilator and use the case actions above.'));
   for (const c of CTRL) {
     let r;
     if (c.type === 'select') {
-      const s = h('select', { 'aria-label': c.label, onchange: (e) => { sim.configure({ [c.k]: c.num ? +e.target.value : e.target.value }); refreshControls(); } },
+      const s = h('select', { 'aria-label': c.label, onchange: (e) => { sim.configure({ [c.k]: c.num ? +e.target.value : e.target.value }); log(`${c.label} set to ${e.target.value}`); refreshControls(); } },
         ...c.opts.map(([v, t]) => h('option', { value: v }, t)));
       r = h('div', { class: 'row', 'data-k': c.k, 'data-modes': c.modes || '' }, h('label', {}, c.label), h('span'), s);
       r.refresh = () => { s.value = sim.set[c.k]; };
-    } else r = slider(c, () => sim.set[c.k], (v) => sim.configure({ [c.k]: v }));
-    rows.push(r); box.append(r);
+    } else r = slider(c, () => sim.set[c.k], (v) => { sim.configure({ [c.k]: v }); refreshDials(); });
+    add(dv, r);
   }
-  box.append(h('div', { class: 'btns' },
-    h('button', { id: 'b-ih', title: 'Volume control only. Pause at end of inspiration; read plateau.', onclick: () => { if (sim.set.mode === 'VC') { sim.s.holdReq = true; flash('Inspiratory hold at the next breath'); } else flash('Inspiratory hold needs volume control'); } }, 'Insp hold'),
-    h('button', { id: 'b-eh', title: 'Closes the circuit at end of expiration to read total PEEP', onclick: () => { sim.s.ehReq = true; flash('Expiratory hold at the end of the next exhalation'); } }, 'Exp hold'),
-    h('button', { id: 'b-abg', class: 'primary', onclick: getABG }, 'Get ABG')));
-  box.append(h('div', { class: 'btns', role: 'group', 'aria-label': 'Time speed' },
+  for (const [k, [t, d]] of Object.entries(MODE_INFO)) {
+    dm.append(h('button', { class: 'modebtn', 'data-m': k, onclick: () => { sim.configure({ mode: k }); log(`Mode: ${t}`); refreshControls(); } }, h('b', {}, t), h('div', { class: 'muted' }, d)));
+  }
+  dt.append(h('div', { class: 'btns', role: 'group', 'aria-label': 'Time speed' }, h('span', { class: 'muted' }, 'Time speed'),
     ...[[0, 'Pause'], [1, '1x'], [5, '5x'], [20, '20x'], [60, '60x']].map(([v, t]) => h('button', { 'data-speed': v, class: v === speed ? 'on' : '', onclick: () => setSpeed(v) }, t)),
     h('button', { onclick: resetAll }, 'Reset')));
-  box.append(h('p', { id: 'clock', class: 'muted' }));
-  box._rows = rows;
+  dt.append(h('p', { id: 'clock', class: 'muted' }));
   refreshControls();
 }
 function refreshControls() {
-  for (const r of $('#controls')._rows || []) {
+  for (const r of ctlRows) {
     r.refresh();
     const m = r.dataset.modes; r.hidden = !!m && !m.split(' ').includes(sim.set.mode);
   }
-  const ih = $('#b-ih'); if (ih) ih.disabled = sim.set.mode !== 'VC';
+  $('#b-ih').disabled = sim.set.mode !== 'VC';
+  document.querySelectorAll('.modebtn').forEach((b) => b.classList.toggle('on', b.dataset.m === sim.set.mode));
+  $('#r-mode').textContent = MODE_INFO[sim.set.mode][0].split(':')[0];
+  $('#modeinfo').innerHTML = `<b>${MODE_INFO[sim.set.mode][0]}</b><br>${MODE_INFO[sim.set.mode][1]}`;
+  refreshDials();
+}
+function refreshDials() {
+  const st = sim.set, m = st.mode;
+  const d = [m === 'PC' ? ['ΔP', fp(st.pc), U.p] : m === 'PSV' ? ['Support', fp(st.ps), U.p] : [m === 'APV' ? 'Target VT' : 'VT', st.vt, 'mL'], ['PEEP', fp(st.peep), U.p], ['Oxygen', Math.round(st.fio2 * 100), '%']];
+  $('#dials').replaceChildren(...d.map(([n, v, u]) => h('button', { class: 'dial', onclick: () => openDrawer('controls'), 'aria-label': `${n} ${v} ${u}, open controls` }, h('div', {}, h('b', {}, String(v)), h('small', {}, `${n} ${u}`)))));
 }
 function setSpeed(v) {
   speed = v;
   document.querySelectorAll('[data-speed]').forEach((b) => b.classList.toggle('on', +b.dataset.speed === v));
   if (v > 5) wbuf = [];
 }
-function flash(msg) { const a = $('#alarms'); const t = h('span', { style: 'background:#10304a;border-color:#56b4e9;color:#cfe8ff' }, msg); a.prepend(t); setTimeout(() => t.remove(), 2500); }
+const events = [];
+function log(msg) { events.unshift({ t: sim.t, msg }); if (events.length > 80) events.pop(); if (curDrawer === 'events') renderEvents(); }
+function flash(msg) { const t = h('span', {}, msg); $('#toast').append(t); setTimeout(() => t.remove(), 2800); log(msg); }
+const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+function renderEvents() { $('#d-events').replaceChildren(events.length ? h('table', { class: 'meas' }, ...events.map((e) => h('tr', {}, h('td', {}, mmss(e.t)), h('td', {}, e.msg)))) : h('p', { class: 'muted' }, 'No events yet.')); }
+
+// ---------- drawer / bottom bar ----------
+let curDrawer = '';
+const DRAWERS = { modes: ['Modes', 'd-modes'], controls: ['Controls', 'd-controls'], patient: ['Patient', 'd-patient'], tools: ['Tools', 'd-tools'], events: ['Events', 'd-events'], alarms: ['Alarms', 'd-alarms'] };
+function openDrawer(name) {
+  curDrawer = name || '';
+  $('#drawer').hidden = !name;
+  for (const [k, [t, id]] of Object.entries(DRAWERS)) { $('#' + id).hidden = k !== name; if (k === name) $('#dtitle').textContent = t; }
+  document.querySelectorAll('.bbar button').forEach((b) => b.classList.toggle('on', b.dataset.d === (name === 'controls' || name === 'modes' || name === 'alarms' ? '' : name)));
+  if (name === 'events') renderEvents();
+}
 
 function loadFree(key) {
   sim.load(key, {}, { ...DEFAULTS, ...FREE[key] }); sim.settle(); sim.rec = true;
@@ -138,15 +170,21 @@ function resetAll() { if (scn) startScenario(scn.sc); else loadFree(sim.key); }
 
 // ---------- monitor ----------
 function renderMonitor(mon, alarms) {
-  const t = (cls, name, val, sub, al) => h('div', { class: `tile ${cls} ${al ? 'alarm' : ''}` }, h('div', { class: 'n' }, name), h('div', { class: 'v' }, val), h('div', { class: 's' }, sub || ' '));
-  $('#monitor').replaceChildren(
-    t('hr', 'HR', n0(mon.hr), 'bpm', alarms.has('hr')),
-    t('bp', 'BP', `${n0(mon.sbp)}/${n0(mon.dbp)}`, `MAP ${n0(mon.map)}`, alarms.has('map')),
-    t('sp', 'SpO2', n0(mon.spo2), '%', alarms.has('spo2')),
-    t('rr', 'RR', n0(mon.rr), `/min total${sim.set.mode === 'PSV' ? '' : ' (set ' + sim.set.rr + ')'}`, alarms.has('rr')),
-    t('co', 'EtCO2', fg(mon.etco2), U.g, alarms.has('co2')),
-    t('tp', 'Temp', ft(mon.temp), `°${U.t}`),
+  const l = sim.last, st = sim.set, m = sim.metrics();
+  const num = (set, big, unit, name, al) => h('div', { class: 'num' + (al ? ' alarm' : '') }, h('div', { class: 'set' }, ...set.map((x) => h('div', {}, String(x)))), h('div', { class: 'big' }, h('b', {}, big), h('span', {}, `${name} ${unit}`)));
+  $('#lcol').replaceChildren(
+    num([fp(40), fp(st.peep)], fp(l?.pip), U.p, 'Ppeak', alarms.has('pip')),
+    num([], n0(m.mv, 1), 'L/min', 'MinVol'),
+    num([st.mode === 'PC' || st.mode === 'PSV' ? '' : st.vt], n0(l ? l.vte * 1000 : NaN), 'mL', 'VTe'),
+    num([st.mode === 'PSV' ? '' : st.rr], n0(sim.rrTotal()), '/min', 'fTotal', alarms.has('rr')),
+    num([], n0(l?.rcexp, 2), 's', 'RCexp'),
+    num([90], n0(mon.spo2), '%', 'SpO2', alarms.has('spo2')),
   );
+  const cdyn = l ? (l.vti * 1000) / Math.max(1, l.pip - l.peepTot) : NaN;
+  const s = (n, v, u, al) => h('div', { class: 's' + (al ? ' alarm' : '') }, h('b', {}, v), h('span', {}, `${n} ${u}`));
+  $('#strip').replaceChildren(
+    s('Pmean', fp(l?.pmean, 1), U.p), s('Cdyn', n0(cdyn), 'mL/' + U.p), s('PetCO2', fg(mon.etco2), U.g, alarms.has('co2')),
+    s('HR', n0(mon.hr), 'bpm', alarms.has('hr')), s('BP', `${n0(mon.sbp)}/${n0(mon.dbp)}`, `MAP ${n0(mon.map)}`, alarms.has('map')), s('Temp', ft(mon.temp), '°' + U.t));
 }
 function computeAlarms(mon) {
   const a = new Map(), l = sim.last;
@@ -208,40 +246,22 @@ function renderTruth() {
 }
 
 // ---------- canvases ----------
-const css = getComputedStyle(document.documentElement);
-const col = (n) => css.getPropertyValue(n).trim();
-function fit(c) {
-  const d = window.devicePixelRatio || 1, w = c.clientWidth, hh = c.clientHeight;
-  if (c.width !== Math.round(w * d) || c.height !== Math.round(hh * d)) { c.width = Math.round(w * d); c.height = Math.round(hh * d); }
-  const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, hh);
-  return [g, w, hh];
-}
-function lane(g, x0, y0, w, hh, ymin, ymax, color, label, pts, ticks, fmt) {
-  g.save(); g.beginPath(); g.rect(x0, y0, w, hh); g.clip();
-  g.strokeStyle = '#1b2a3a'; g.fillStyle = '#7d8ea3'; g.font = '11px system-ui'; g.lineWidth = 1;
-  const Y = (v) => y0 + hh - ((v - ymin) / (ymax - ymin)) * hh;
-  for (const t of ticks) { g.beginPath(); g.moveTo(x0, Y(t)); g.lineTo(x0 + w, Y(t)); g.stroke(); g.fillText(fmt(t), x0 + 4, Y(t) - 2); }
-  g.fillStyle = color; g.fillText(label, x0 + 40, y0 + 12);
-  g.strokeStyle = color; g.lineWidth = 2; g.beginPath();
-  pts.forEach(([x, v], i) => (i ? g.lineTo(x, Y(v)) : g.moveTo(x, Y(v)))); g.stroke(); g.restore();
-}
 function drawWave() {
-  const c = $('#wave'), [g, w, hh] = fit(c), W = 12, laneH = hh / 3;
+  const c = $('#wave'), [g, w, hh] = fit(c), W = 12;
   $('#ffnote').hidden = speed <= 5;
   if (speed > 5 || !wbuf.length) return;
+  const lh = [hh * 0.38, hh * 0.38, hh * 0.24];
   const t1 = wbuf[wbuf.length - 1].t, X = (t) => ((t - (t1 - W)) / W) * w;
   const vis = wbuf.filter((s) => s.t > t1 - W);
   const pmax = Math.max(30, Math.ceil((Math.max(...vis.map((s) => s.paw)) + 2) / 10) * 10);
   const fmx = Math.max(60, Math.ceil(Math.max(...vis.map((s) => Math.abs(s.flow * 60))) / 30) * 30);
   const vmx = Math.max(500, Math.ceil(Math.max(...vis.map((s) => s.vol * 1000)) / 250) * 250);
-  const step = pmax > 60 ? 20 : 10;
-  lane(g, 0, 0, w, laneH, -5, pmax, col('--p'), `Paw (${U.p})`, vis.map((s) => [X(s.t), s.paw]), range(0, pmax, step), (t) => fp(t));
-  lane(g, 0, laneH, w, laneH, -fmx, fmx, col('--f'), 'Flow (L/min)', vis.map((s) => [X(s.t), s.flow * 60]), [-fmx / 2, 0, fmx / 2], (t) => t.toFixed(0));
-  lane(g, 0, 2 * laneH, w, laneH, 0, vmx, col('--v'), 'Volume (mL)', vis.map((s) => [X(s.t), Math.max(0, s.vol * 1000)]), range(0, vmx, vmx / 2), (t) => t.toFixed(0));
+  lane(g, 0, 0, w, lh[0], -5, pmax, col('--p'), `Paw (${U.p})`, vis.map((s) => [X(s.t), s.paw]), range(0, pmax, pmax > 60 ? 20 : 10), (t) => fp(t));
+  lane(g, 0, lh[0], w, lh[1], -fmx, fmx, col('--f'), 'Flow (L/min)', vis.map((s) => [X(s.t), s.flow * 60]), [-fmx / 2, 0, fmx / 2], (t) => t.toFixed(0));
+  lane(g, 0, lh[0] + lh[1], w, lh[2], 0, vmx, col('--v'), 'Volume (mL)', vis.map((s) => [X(s.t), Math.max(0, s.vol * 1000)]), [0, vmx / 2], (t) => t.toFixed(0));
 }
-const range = (a, b, s) => { const r = []; for (let x = a; x <= b + 1e-9; x += s) r.push(x); return r; };
-function drawLoop() {
-  const [g, w, hh] = fit($('#loop')), kind = $('#loop-kind').value, m = 34;
+function drawLoop(canvas, kind) {
+  const [g, w, hh] = fit(canvas), m = 34;
   const fx = (s) => (kind === 'pv' ? s.paw : s.vol * 1000), fy = (s) => (kind === 'pv' ? s.vol * 1000 : s.flow * 60);
   const all = [...loops.cur, ...loops.prev, ...loops.ref];
   if (!all.length) return;
@@ -251,10 +271,10 @@ function drawLoop() {
   const X = (v) => m + ((v - x0) / (x1 - x0)) * (w - m - 6), Y = (v) => hh - 22 - ((v - y0) / (y1 - y0)) * (hh - 30);
   g.strokeStyle = '#1b2a3a'; g.fillStyle = '#7d8ea3'; g.font = '11px system-ui';
   g.beginPath(); g.moveTo(X(Math.max(x0, 0)), 0); g.lineTo(X(Math.max(x0, 0)), hh); g.moveTo(0, Y(0)); g.lineTo(w, Y(0)); g.stroke();
-  g.fillText(kind === 'pv' ? `Paw (${U.p})` : 'Volume (mL)', w - 90, hh - 6); g.fillText(kind === 'pv' ? 'mL' : 'L/min', 4, 12);
+  g.fillText(kind === 'pv' ? `Paw (${U.p})` : 'Volume (mL)', w - 90, hh - 6); g.fillText(kind === 'pv' ? 'Volume (mL)' : 'Flow (L/min)', 4, 12);
   const line = (arr, color, dash, lw) => { if (arr.length < 2) return; g.strokeStyle = color; g.lineWidth = lw; g.setLineDash(dash); g.beginPath(); arr.forEach((s, i) => (i ? g.lineTo(X(fx(s)), Y(fy(s))) : g.moveTo(X(fx(s)), Y(fy(s))))); g.stroke(); g.setLineDash([]); };
   line(loops.ref, '#cc79a7', [4, 4], 1.5); line(loops.prev, '#55657a', [], 1.5); line(loops.cur, kind === 'pv' ? col('--p') : col('--f'), [], 2.5);
-  if (kind === 'pv' && loops.prev.length > 4) { // dynamic compliance line: end-expiratory point to peak
+  if (kind === 'pv' && loops.prev.length > 4) { // dynamic compliance line: start to peak
     const p = loops.prev, pk = p.reduce((a, s) => (s.paw > a.paw ? s : a)), st0 = p[0];
     g.strokeStyle = '#ffffff55'; g.lineWidth = 1; g.beginPath(); g.moveTo(X(st0.paw), Y(0)); g.lineTo(X(pk.paw), Y(pk.vol * 1000)); g.stroke();
   }
@@ -272,7 +292,7 @@ function getABG() {
   abgBusy = true; const b = $('#b-abg'); b.disabled = true; b.textContent = 'Analyzing...';
   const a = sim.abg(); a.hr = sim.monitor().hr;
   setTimeout(() => { abgHist.unshift(a); showABG(); }, 3000);
-  setTimeout(() => { abgBusy = false; b.disabled = false; b.textContent = 'Get ABG'; }, 6000);
+  setTimeout(() => { abgBusy = false; b.disabled = false; b.textContent = 'Get ABG'; log('ABG sampled'); }, 6000);
 }
 function showABG() {
   const f = (v, lo, hi, d = 1) => `<td class="${v < lo ? 'lo' : v > hi ? 'hi' : ''}">${v.toFixed(d)}</td>`;
@@ -391,8 +411,9 @@ function fireEvents() {
 // ---------- tabs ----------
 function showTab(t) {
   document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
-  for (const id of ['sim', 'scn', 'model']) $('#tab-' + id).hidden = id !== t;
+  for (const id of ['sim', 'scn', 'learn', 'model']) $('#tab-' + id).hidden = id !== t;
   if (t === 'scn' && !$('#tab-scn').children.length) renderScnList();
+  if (t === 'learn' && !$('#tab-learn').children.length) renderLearn($('#tab-learn'));
 }
 
 // ---------- main loop ----------
@@ -407,7 +428,7 @@ function frame(now) {
     const out = sim.out.splice(0);
     feedLoops(out);
     if (speed <= 5) { wbuf.push(...out); const t1 = sim.t; while (wbuf.length && wbuf[0].t < t1 - 14) wbuf.shift(); }
-    if (!$('#tab-sim').hidden) { drawWave(); drawLoop(); }
+    if (!$('#tab-sim').hidden) { drawWave(); drawLoop($('#loop-pv'), 'pv'); drawLoop($('#loop-fv'), 'fv'); drawLung($('#lung'), sim); }
     acc += dt;
     if (acc > 0.25) { acc = 0; tick(); }
   }
@@ -418,10 +439,12 @@ function tick() {
   const mon = sim.monitor(), al = computeAlarms(mon);
   const keys = new Set([...al.keys()]);
   renderMonitor(mon, keys);
-  $('#alarms').querySelectorAll('.al').forEach((n) => n.remove());
-  for (const msg of al.values()) $('#alarms').append(h('span', { class: 'al' }, msg));
+  for (const k of keys) if (!prevAlarms.has(k)) log('Alarm: ' + al.get(k));
+  prevAlarms = keys;
+  $('#alarms').replaceChildren(...[...al.values()].map((msg) => h('span', { class: 'al' }, msg)));
+  $('#d-alarms').replaceChildren(al.size ? h('div', { class: 'alarms' }, ...[...al.values()].map((m) => h('span', {}, m))) : h('p', { class: 'muted' }, 'No active alarms.'), h('p', { class: 'muted' }, 'Limits: peak pressure 40, SpO2 90, MAP 60, HR 130, rate 35, EtCO2 25-60. History is in Events.'));
   renderMeasured();
-  const c = $('#clock'); if (c) c.textContent = `Simulated time ${Math.floor(sim.t / 60)}:${String(Math.floor(sim.t % 60)).padStart(2, '0')}`;
+  const c = $('#clock'); if (c) c.textContent = `Simulated time ${mmss(sim.t)}`;
   if (scn) { const el = $('#goals'); if (el) { const res = evalGoals(scn.sc.goals, sim); [...el.children].forEach((n, i) => { const g = res[i]; n.className = 'goal ' + (g.ok ? 'ok' : ''); n.textContent = `${g.ok ? '✓' : '○'} ${g.label}: ${typeof g.val === 'number' ? g.val.toFixed(g.k === 'ph' ? 2 : 1) : g.val}`; }); const fin = [...$('#scbar').querySelectorAll('button')].find((b) => /Finish|Completed/.test(b.textContent)); if (fin && !scn.done) fin.disabled = !res.every((g) => g.ok); } }
 }
 
@@ -434,8 +457,17 @@ for (const [id, k] of [['u-p', 'p'], ['u-g', 'g'], ['u-t', 't']]) {
 const showABGIfOpen = () => { if ($('#abg-dlg').open) showABG(); };
 $('#loop-save').onclick = () => { loops.ref = (loops.prev.length ? loops.prev : loops.cur).slice(); };
 $('#loop-clear').onclick = () => { loops.ref = []; };
+$('#r-modes').onclick = () => openDrawer('modes');
+$('#r-controls').onclick = () => openDrawer('controls');
+$('#r-alarms').onclick = () => openDrawer('alarms');
+$('#dclose').onclick = () => openDrawer('');
+document.querySelectorAll('.bbar button').forEach((b) => b.addEventListener('click', () => openDrawer(b.dataset.d)));
+$('#b-ih').onclick = () => { if (sim.set.mode === 'VC') { sim.s.holdReq = true; flash('Inspiratory hold at the next breath'); } else flash('Inspiratory hold needs volume control'); };
+$('#b-eh').onclick = () => { sim.s.ehReq = true; flash('Expiratory hold at the end of the next exhalation'); };
+$('#b-abg').onclick = getABG;
 $('#physics').onchange = (e) => { $('#phys').hidden = !e.target.checked; if (e.target.checked) renderPhysics(); };
 if (INSTRUCTOR) { $('#inst-note').hidden = false; $('#truth').hidden = false; }
+openDrawer('');
 $('#tab-model').innerHTML = MODEL_HTML;
 sim.rec = true;
 buildControls();

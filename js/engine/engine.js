@@ -137,7 +137,7 @@ export class Sim {
     if (br) {
       br.pawSum += pao; br.cnt++;
       if (s.ph === 'insp') { if (vdot > 0) br.vti += vdot * DT; if (pao > br.pip) br.pip = pao; if (pao - st.peep < br.minRel) br.minRel = pao - st.peep; }
-      else if (s.ph === 'exp' && vdot < 0) br.vte -= vdot * DT;
+      else if (s.ph === 'exp' && vdot < 0) { br.vte -= vdot * DT; if (-vdot > br.pkE) br.pkE = -vdot; }
     }
 
     // phase logic
@@ -185,7 +185,7 @@ export class Sim {
     if (s.br) this._finalize(pelNow);
     if (trig && s.eff) s.eff.trig = true;
     const dbl = trig && s.br && s.tPh < 0.6 && s.ph === 'exp';
-    s.br = { n: ++s.nBreath, t: s.t, trig, dbl: !!dbl, vti: 0, vte: 0, pip: -1e9, minRel: 1e9, pawSum: 0, cnt: 0, pplat: 0, tI: 0, peak: 0 };
+    s.br = { n: ++s.nBreath, t: s.t, trig, dbl: !!dbl, vti: 0, vte: 0, pip: -1e9, minRel: 1e9, pawSum: 0, cnt: 0, pkE: 0, pplat: 0, tI: 0, peak: 0 };
     s.ph = 'insp'; s.tPh = 0; s.tBr = 0; s.vStart = s.V; s.peakFlow = 0;
     this.starts.push(s.t); if (this.starts.length > 60) this.starts.shift();
   }
@@ -197,7 +197,7 @@ export class Sim {
     const sum = {
       n: b.n, t: b.t, trig: b.trig, dbl: b.dbl, vti: b.vti, vte: b.vte, pip: b.pip, pplat: b.pplat,
       peepTot, autoPeep: Math.max(0, pelNow - st.peep), tI: b.tI, tE: tTot - b.tI, tTot,
-      pmean: b.pawSum / Math.max(1, b.cnt), peak: b.peak, minRel: b.minRel,
+      pmean: b.pawSum / Math.max(1, b.cnt), peak: b.peak, minRel: b.minRel, rcexp: b.pkE > 0.01 ? b.vte / b.pkE : NaN,
     };
     this.last = sum; this.breaths.push(sum); if (this.breaths.length > 40) this.breaths.shift();
     // alveolar volume for gas exchange
