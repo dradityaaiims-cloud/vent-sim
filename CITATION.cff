@@ -9,4 +9,4 @@ authors:
     given-names: Aditya
 repository-code: "https://github.com/dradityaaiims-cloud/vent-sim"
 url: "https://dradityaaiims-cloud.github.io/vent-sim/"
-# TODO: add `doi:` after archiving a release on Zenodo.
+doi: 10.5281/zenodo.23630783
