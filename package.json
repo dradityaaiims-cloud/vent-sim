@@ -1,0 +1,11 @@
+{
+  "name": "vent-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dr. Singh's Vent Sim - educational mechanical ventilator simulator (static site, no build step)",
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8080"
+  }
+}

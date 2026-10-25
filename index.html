@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dr. Singh's Vent Sim</title>
+<meta name="description" content="Educational mechanical ventilator simulator with normal, COPD and ARDS lungs, a live monitor, on-demand ABG and 10 troubleshooting cases.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>Dr. Singh's Vent Sim</h1>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="sim" aria-selected="true">Simulator</button>
+    <button role="tab" data-tab="scn" aria-selected="false">Scenarios</button>
+    <button role="tab" data-tab="model" aria-selected="false">Model &amp; limits</button>
+  </nav>
+  <div class="units" aria-label="Units">
+    <label>Pressure <select id="u-p"><option>cmH2O</option><option>kPa</option></select></label>
+    <label>Gases <select id="u-g"><option>mmHg</option><option>kPa</option></select></label>
+    <label>Temp <select id="u-t"><option>C</option><option>F</option></select></label>
+  </div>
+</header>
+<div class="banner" role="note">
+  Educational use only. Not for clinical decision-making, assessment or exams. Not affiliated with or endorsed by any ventilator manufacturer.
+  <span id="inst-note" hidden> Instructor view: model truth shown.</span>
+</div>
+
+<main>
+  <section id="tab-sim" role="tabpanel">
+    <div id="scbar" class="scbar" hidden></div>
+    <div class="grid">
+      <aside class="panel" id="controls" aria-label="Ventilator and patient controls"></aside>
+      <div class="center">
+        <div id="monitor" class="monitor" aria-live="off"></div>
+        <div id="alarms" class="alarms" role="status" aria-live="polite"></div>
+        <div class="wavewrap">
+          <canvas id="wave" aria-label="Pressure, flow and volume waveforms" role="img"></canvas>
+          <div id="ffnote" class="ffnote" hidden>Fast-forward: waveforms paused above 5x</div>
+          <ul class="legend"><li class="lp">Airway pressure</li><li class="lf">Flow</li><li class="lv">Volume</li></ul>
+        </div>
+      </div>
+      <aside class="panel" id="right" aria-label="Loops and measurements">
+        <div class="loophead">
+          <select id="loop-kind" aria-label="Loop type"><option value="pv">P-V loop</option><option value="fv">Flow-volume loop</option></select>
+          <button id="loop-save" title="Save the last loop as a dashed reference">Save ref</button>
+          <button id="loop-clear" title="Clear reference">Clear</button>
+        </div>
+        <canvas id="loop" aria-label="Pressure-volume or flow-volume loop" role="img"></canvas>
+        <table id="meas" class="meas"></table>
+        <label class="chk"><input type="checkbox" id="physics"> Show the physics</label>
+        <div id="phys" class="phys" hidden></div>
+        <div id="truth" class="phys" hidden></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="tab-scn" role="tabpanel" hidden></section>
+  <section id="tab-model" role="tabpanel" hidden></section>
+</main>
+
+<dialog id="abg-dlg" aria-labelledby="abg-title">
+  <h2 id="abg-title">Arterial blood gas</h2>
+  <div id="abg-body"></div>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
