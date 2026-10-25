@@ -11,11 +11,11 @@
 <header>
   <h1>Dr. Singh's Vent Sim</h1>
   <nav role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="learn" aria-selected="false">Learn</button>
     <button role="tab" data-tab="sim" aria-selected="true">Simulator</button>
     <button role="tab" data-tab="scn" aria-selected="false">Scenarios</button>
-    <button role="tab" data-tab="learn" aria-selected="false">Learn</button>
-    <button role="tab" data-tab="model" aria-selected="false">Model &amp; limits</button>
     <button role="tab" data-tab="about" aria-selected="false">About</button>
+    <button role="tab" data-tab="model" aria-selected="false">Model &amp; limits</button>
     <a id="hdr-fb" class="hdrlink" target="_blank" rel="noopener noreferrer">Feedback / report a bug</a>
   </nav>
   <div class="units" aria-label="Units">
@@ -32,6 +32,21 @@
 <main>
   <section id="tab-sim" role="tabpanel">
     <div id="scbar" class="scbar" hidden></div>
+    <div id="patientbar" class="pbar" aria-label="Patient">
+      <b>Patient</b>
+      <label>Lung type <select id="pb-lung"><option value="normal">Normal</option><option value="copd">COPD</option><option value="asthma">Asthma (severe)</option><option value="ards">ARDS (moderate)</option></select></label>
+      <label>Sex <select id="pb-sex"><option value="M">Male</option><option value="F">Female</option></select></label>
+      <label>Height <input id="pb-h" type="number" min="130" max="210" step="1"> cm</label>
+      <label>Weight <input id="pb-w" type="number" min="30" max="200" step="1"> kg</label>
+      <span id="pb-pbw" class="pbw" title="Predicted body weight, from height and sex. Tidal volume is set from this, not from actual weight."></span>
+      <label>Tube <select id="pb-ett"><option value="7">ETT 7 mm</option><option value="8">ETT 8 mm</option><option value="9">ETT 9 mm</option></select></label>
+      <span class="grow"></span>
+      <button id="pb-new" title="Choose a new patient and starting settings">New patient...</button>
+    </div>
+    <div id="tip" class="tip" hidden>
+      <span><b>Start here:</b> the <b>Patient</b> bar sets who you are ventilating. <b>Controls</b> (right) change ventilator settings. Watch the <b>waveforms</b>, <b>lungs</b> and <b>loops</b> respond. <b>Insp hold</b> / <b>Exp hold</b> measure plateau and auto-PEEP. <b>Examples</b> and <b>Scenarios</b> give guided practice. Hover any number for what it means.</span>
+      <button id="tip-learn">Open the guide</button><button id="tip-x" aria-label="Dismiss">Got it</button>
+    </div>
     <div class="screen">
       <div class="lcol" id="lcol" aria-label="Main measurements"></div>
       <div class="mid">
@@ -54,6 +69,17 @@
           <div id="d-controls"></div>
           <div id="d-patient"></div>
           <div id="d-tools"></div>
+          <div id="d-meas">
+            <div class="two">
+              <div><table id="meas" class="meas"></table></div>
+              <div>
+                <label class="chk"><input type="checkbox" id="physics"> Show the physics</label>
+                <div id="phys" class="phys" hidden></div>
+                <div id="truth" class="phys" hidden></div>
+                <div id="modeinfo" class="phys"></div>
+              </div>
+            </div>
+          </div>
           <div id="d-examples"></div>
           <div id="d-events"></div>
           <div id="d-alarms"></div>
@@ -72,20 +98,9 @@
       </div>
     </div>
     <nav class="bbar" aria-label="Screen sections">
-      <button data-d="" class="on">Monitoring</button><button data-d="tools">Tools</button><button data-d="events">Events</button><button data-d="examples">Examples</button><button data-d="patient">Patient</button>
+      <button data-d="" class="on">Monitoring</button><button data-d="meas">Measurements</button><button data-d="tools">Tools</button><button data-d="events">Events</button><button data-d="examples">Examples</button><button data-d="patient">Effort &amp; tube</button>
     </nav>
-    <div class="panel under">
-      <div class="two">
-        <div><h3>Measurements (after holds)</h3><table id="meas" class="meas"></table></div>
-        <div>
-          <label class="chk"><input type="checkbox" id="physics"> Show the physics</label>
-          <div id="phys" class="phys" hidden></div>
-          <div id="truth" class="phys" hidden></div>
-          <div id="modeinfo" class="phys"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
   <section id="tab-scn" role="tabpanel" hidden></section>
   <section id="tab-learn" role="tabpanel" hidden></section>
@@ -93,6 +108,21 @@
   <section id="tab-about" role="tabpanel" hidden></section>
 </main>
 <div id="toast" class="toast" aria-live="polite"></div>
+
+<dialog id="setup-dlg" aria-labelledby="setup-title">
+  <h2 id="setup-title">Set up your patient</h2>
+  <p class="muted">Choose who you will ventilate. You can change everything later from the Patient bar and Controls.</p>
+  <div class="lungcards" id="lungcards" role="radiogroup" aria-label="Lung type"></div>
+  <div class="setuprow">
+    <label>Sex <select id="su-sex"><option value="M">Male</option><option value="F">Female</option></select></label>
+    <label>Height (cm) <input id="su-h" type="number" min="130" max="210" value="175"></label>
+    <label>Weight (kg) <input id="su-w" type="number" min="30" max="200" value="75"></label>
+    <label>Mode <select id="su-mode"><option value="VC">Volume control (VC-CMV)</option><option value="PC">Pressure control (PC-CMV)</option><option value="APV">Adaptive pressure control (APVcmv)</option><option value="PSV">Pressure support / CPAP (SPONT)</option></select></label>
+  </div>
+  <p id="su-note" class="muted"></p>
+  <div class="btns"><button id="su-go" class="primary">Start the simulator</button><button id="su-learn">Read the quick guide first</button></div>
+  <p class="muted small">Educational use only. All values are simulated. Never enter patient information.</p>
+</dialog>
 
 <dialog id="abg-dlg" aria-labelledby="abg-title">
   <h2 id="abg-title">Arterial blood gas</h2>

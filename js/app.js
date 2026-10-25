@@ -101,20 +101,11 @@ function buildControls() {
   const dv = $('#d-controls'), dp = $('#d-patient'), dt = $('#d-tools'), dm = $('#d-modes');
   [dv, dp, dt, dm].forEach((d) => d.replaceChildren());
   ctlRows = [];
+  $('#patientbar').hidden = !!scn; syncBar();
+  if (scn) { $('#tip').hidden = true; setTimeout(layout, 0); } else maybeTip();
   const add = (box, r) => { ctlRows.push(r); box.append(r); };
   if (!scn) {
-    const sel = h('select', { 'aria-label': 'Lung type', onchange: (e) => loadFree(e.target.value) },
-      ...['normal', 'copd', 'asthma', 'ards'].map((k) => h('option', { value: k, selected: k === sim.key }, { normal: 'Normal lungs', copd: 'COPD', asthma: 'Asthma (severe)', ards: 'ARDS (moderate)' }[k])));
-    dp.append(h('div', { class: 'row' }, h('label', {}, 'Lung type'), h('span'), sel));
-    const sex = h('select', { 'aria-label': 'Sex', onchange: (e) => { sim.patch({ sex: e.target.value }); pbwOut(); } }, h('option', { value: 'M', selected: sim.pt.sex === 'M' }, 'Male'), h('option', { value: 'F', selected: sim.pt.sex === 'F' }, 'Female'));
-    const ht = h('input', { type: 'number', min: 130, max: 210, value: sim.pt.height, 'aria-label': 'Height cm', onchange: (e) => { sim.patch({ height: +e.target.value }); pbwOut(); } });
-    const wt = h('input', { type: 'number', min: 30, max: 200, value: sim.pt.weight, 'aria-label': 'Weight kg', onchange: (e) => sim.patch({ weight: +e.target.value }) });
-    const pb = h('output');
-    function pbwOut() { pb.textContent = `PBW ${sim.pbw.toFixed(1)} kg`; }
-    pbwOut();
-    dp.append(h('div', { class: 'row' }, h('label', {}, 'Sex / height cm / weight kg'), pb, h('div', { class: 'btns', style: 'grid-column:1/-1;margin:0' }, sex, ht, wt)));
-    const ett = h('select', { 'aria-label': 'ETT size', onchange: (e) => sim.patch({ ett: +e.target.value }) }, ...Object.keys(ETT).map((k) => h('option', { value: k, selected: +k === sim.pt.ett }, `ETT ${k} mm`)));
-    dp.append(h('div', { class: 'row' }, h('label', {}, 'Endotracheal tube'), h('span'), ett));
+    dp.append(h('p', { class: 'muted' }, 'Lung type, sex, height, weight and tube size are in the Patient bar at the top. Here you set how the patient breathes and how obstructed the tube is.'));
     for (const c of PT) add(dp, slider(c, () => getPt(c.k), (v) => patchPt(c.k, v)));
   } else dp.append(h('p', { class: 'muted' }, 'Scenario in progress: the patient is fixed. Adjust the ventilator and use the case actions above.'));
   for (const c of CTRL) {
@@ -154,7 +145,7 @@ function refreshControls() {
 function refreshDials() {
   const st = sim.set, m = st.mode;
   const d = [m === 'PC' ? ['ΔP', fp(st.pc), U.p] : m === 'PSV' ? ['Support', fp(st.ps), U.p] : [m === 'APV' ? 'Target VT' : 'VT', st.vt, 'mL'], ['PEEP', fp(st.peep), U.p], ['Oxygen', Math.round(st.fio2 * 100), '%']];
-  $('#dials').replaceChildren(...d.map(([n, v, u]) => h('button', { class: 'dial', onclick: () => openDrawer('controls'), 'aria-label': `${n} ${v} ${u}, open controls` }, h('div', {}, h('b', {}, String(v)), h('small', {}, `${n} ${u}`)))));
+  $('#dials').replaceChildren(...d.map(([n, v, u]) => h('button', { class: 'dial', title: `${n}: click to change in Controls`, onclick: () => openDrawer('controls'), 'aria-label': `${n} ${v} ${u}, open controls` }, h('div', {}, h('b', {}, String(v)), h('small', {}, `${n} ${u}`)))));
 }
 function setSpeed(v) {
   speed = v;
@@ -169,12 +160,13 @@ function renderEvents() { $('#d-events').replaceChildren(events.length ? h('tabl
 
 // ---------- drawer / bottom bar ----------
 let curDrawer = '';
-const DRAWERS = { modes: ['Modes', 'd-modes'], controls: ['Controls', 'd-controls'], patient: ['Patient', 'd-patient'], tools: ['Tools', 'd-tools'], examples: ['Examples: patient-ventilator asynchrony', 'd-examples'], events: ['Events', 'd-events'], alarms: ['Alarms', 'd-alarms'] };
+const DRAWERS = { modes: ['Modes', 'd-modes'], controls: ['Controls', 'd-controls'], patient: ['Patient', 'd-patient'], tools: ['Tools', 'd-tools'], meas: ['Measurements (after holds)', 'd-meas'], examples: ['Examples: patient-ventilator asynchrony', 'd-examples'], events: ['Events', 'd-events'], alarms: ['Alarms', 'd-alarms'] };
 function openDrawer(name) {
   curDrawer = name || '';
   $('#drawer').hidden = !name;
   for (const [k, [t, id]] of Object.entries(DRAWERS)) { $('#' + id).hidden = k !== name; if (k === name) $('#dtitle').textContent = t; }
   document.querySelectorAll('.bbar button').forEach((b) => b.classList.toggle('on', b.dataset.d === (name === 'controls' || name === 'modes' || name === 'alarms' ? '' : name)));
+  setTimeout(layout, 0);
   if (name === 'events') renderEvents();
 }
 
@@ -220,7 +212,8 @@ function stressIndex() { // fit Paw = a*t^b + c over constant-flow inspiration; 
 // ---------- monitor ----------
 function renderMonitor(mon, alarms) {
   const l = sim.last, st = sim.set, m = sim.metrics();
-  const num = (set, big, unit, name, al) => h('div', { class: 'num' + (al ? ' alarm' : '') + (name === 'Ppeak' ? ' pk' : '') }, h('div', { class: 'set' }, ...set.map((x) => h('div', {}, String(x)))), h('div', { class: 'big' }, h('b', {}, big), h('span', {}, `${name} ${unit}`)));
+  const TIPS = { Ppeak: 'Peak airway pressure of the last breath. Small numbers: alarm limit and PEEP. High peak with a normal plateau means resistance; both high means stiff lungs.', MinVol: 'Minute ventilation: exhaled volume x rate. Sets CO2 clearance.', VTe: 'Exhaled tidal volume. Small number: the set volume. Compare with ~6-8 mL/kg predicted body weight.', fTotal: 'Total breaths per minute, set plus patient-triggered.', RCexp: 'Measured expiratory time constant (s): how slowly the lung empties. Above ~1 s means breaths may stack.', SpO2: 'Pulse oximeter saturation. Small number: alarm limit.' };
+  const num = (set, big, unit, name, al) => h('div', { class: 'num' + (al ? ' alarm' : '') + (name === 'Ppeak' ? ' pk' : ''), title: TIPS[name] || '' }, h('div', { class: 'set' }, ...set.map((x) => h('div', {}, String(x)))), h('div', { class: 'big' }, h('b', {}, big), h('span', {}, `${name} ${unit}`)));
   $('#lcol').replaceChildren(
     num([fp(40), fp(st.peep)], fp(l?.pip), U.p, 'Ppeak', alarms.has('pip')),
     num([], n0(m.mv, 1), 'L/min', 'MinVol'),
@@ -230,7 +223,8 @@ function renderMonitor(mon, alarms) {
     num([90], n0(mon.spo2), '%', 'SpO2', alarms.has('spo2')),
   );
   const cdyn = l ? (l.vti * 1000) / Math.max(1, l.pip - l.peepTot) : NaN;
-  const s = (n, v, u, al) => h('div', { class: 's' + (al ? ' alarm' : '') }, h('b', {}, v), h('span', {}, `${n} ${u}`));
+  const STIPS = { Pmean: 'Mean airway pressure over the breath. Raises with PEEP and long inspiration; lowers venous return.', Cdyn: 'Dynamic compliance: tidal volume / (peak - PEEP). Includes resistance. Plateau-based static compliance is in Measurements.', PetCO2: 'End-tidal CO2. Lower than PaCO2 by the dead-space gradient.', HR: 'Heart rate.', BP: 'Blood pressure and mean arterial pressure. High auto-PEEP or mean airway pressure lowers it.', Temp: 'Temperature.' };
+  const s = (n, v, u, al) => h('div', { class: 's' + (al ? ' alarm' : ''), title: STIPS[n] || '' }, h('b', {}, v), h('span', {}, `${n} ${u}`));
   $('#strip').replaceChildren(
     s('Pmean', fp(l?.pmean, 1), U.p), s('Cdyn', n0(cdyn), 'mL/' + U.p), s('PetCO2', fg(mon.etco2), U.g, alarms.has('co2')),
     s('HR', n0(mon.hr), 'bpm', alarms.has('hr')), s('BP', `${n0(mon.sbp)}/${n0(mon.dbp)}`, `MAP ${n0(mon.map)}`, alarms.has('map')), s('Temp', ft(mon.temp), '°' + U.t));
@@ -476,11 +470,64 @@ function fireEvents() {
   (scn.sc.events || []).forEach((e, i) => { if (!scn.fired.has(i) && sim.t >= e.t) { scn.fired.add(i); sim.patch(e.patch); flash(e.say || 'Something changed'); } });
 }
 
+// ---------- layout: the simulator fits the window with no page scroll ----------
+function layout() {
+  const t = $('#tab-sim'); if (t.hidden) return;
+  const top = t.getBoundingClientRect().top + window.scrollY;
+  t.style.height = Math.max(520, window.innerHeight - top - 8) + 'px';
+  const sh = $('.screen').getBoundingClientRect().height; t.style.setProperty('--sh', sh + 'px'); // sizes dials and numbers to the room available
+}
+window.addEventListener('resize', layout);
+
+// ---------- patient bar and first-run setup ----------
+const LUNGS = {
+  normal: ['Normal lungs', 'Healthy compliance and resistance. Best for learning the basics.'],
+  copd: ['COPD', 'High resistance, air trapping and auto-PEEP if breaths are too fast. Chronic CO2 retention.'],
+  asthma: ['Severe asthma', 'Very high resistance and flow limitation. Easy to trap air and drop the blood pressure.'],
+  ards: ['ARDS', 'Stiff lungs, shunt and low oxygen. Practise lung protection, PEEP and prone.'],
+};
+function syncBar() {
+  $('#pb-lung').value = sim.key; $('#pb-sex').value = sim.pt.sex; $('#pb-h').value = sim.pt.height; $('#pb-w').value = sim.pt.weight; $('#pb-ett').value = sim.pt.ett;
+  $('#pb-pbw').textContent = `Predicted body weight ${sim.pbw.toFixed(1)} kg | 6-8 mL/kg = ${Math.round(sim.pbw * 6)}-${Math.round(sim.pbw * 8)} mL`;
+}
+function bindBar() {
+  $('#pb-lung').onchange = (e) => loadFree(e.target.value);
+  $('#pb-sex').onchange = (e) => { sim.patch({ sex: e.target.value }); syncBar(); };
+  $('#pb-h').onchange = (e) => { sim.patch({ height: Math.min(210, Math.max(130, +e.target.value || 170)) }); syncBar(); };
+  $('#pb-w').onchange = (e) => { sim.patch({ weight: Math.min(200, Math.max(30, +e.target.value || 70)) }); syncBar(); };
+  $('#pb-ett').onchange = (e) => sim.patch({ ett: +e.target.value });
+  $('#pb-new').onclick = () => openSetup();
+}
+let suLung = 'normal';
+function openSetup() {
+  const dlg = $('#setup-dlg'), cards = $('#lungcards');
+  cards.replaceChildren(...Object.entries(LUNGS).map(([k, [t, d]]) => h('button', { class: 'lungcard', role: 'radio', 'aria-checked': String(k === suLung), 'data-k': k, onclick: () => { suLung = k; cards.querySelectorAll('.lungcard').forEach((c) => c.setAttribute('aria-checked', String(c.dataset.k === k))); suDefaults(); } }, h('b', {}, t), h('span', {}, d))));
+  suDefaults(); speed = 0; dlg.showModal();
+}
+function suDefaults() {
+  const d = { normal: ['M', 175, 75], copd: ['M', 165, 65], asthma: ['F', 165, 65], ards: ['F', 165, 70] }[suLung];
+  $('#su-sex').value = d[0]; $('#su-h').value = d[1]; $('#su-w').value = d[2];
+  $('#su-note').textContent = `Starting settings follow the lung type (VT, rate, PEEP, FiO2). ${LUNGS[suLung][1]}`;
+}
+function finishSetup(thenLearn) {
+  const mods = { sex: $('#su-sex').value, height: Math.min(210, Math.max(130, +$('#su-h').value || 170)), weight: Math.min(200, Math.max(30, +$('#su-w').value || 70)) };
+  const pbwNow = (mods.sex === 'F' ? 45.5 : 50) + 0.91 * (mods.height - 152.4);
+  const set = { ...FREE[suLung], mode: $('#su-mode').value };
+  if (suLung !== 'ards') set.vt = Math.round((pbwNow * 7) / 10) * 10; // about 7 mL/kg predicted body weight
+  else set.vt = Math.round((pbwNow * 6) / 10) * 10;
+  $('#setup-dlg').close(); loadCustom(suLung, mods, set);
+  try { localStorage.setItem('vsim-setup-done', '1'); } catch { /* private mode */ }
+  speed = 1; showTab(thenLearn ? 'learn' : 'sim');
+  if (!thenLearn) maybeTip();
+}
+function maybeTip() { let seen = false; try { seen = localStorage.getItem('vsim-tip') === '1'; } catch { /* */ } $('#tip').hidden = seen || document.body.classList.contains('learner'); setTimeout(layout, 0); }
+
 // ---------- tabs ----------
 function showTab(t) {
   document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   for (const id of ['sim', 'scn', 'learn', 'model', 'about']) $('#tab-' + id).hidden = id !== t;
   if (t === 'about' && !$('#tab-about').children.length) renderAbout($('#tab-about'));
+  layout();
   if (t === 'scn' && !$('#tab-scn').children.length) renderScnList();
   if (t === 'learn' && !$('#tab-learn').children.length) renderLearn($('#tab-learn'));
 }
@@ -530,6 +577,12 @@ $('#w-full').onclick = () => { const el = $('.wavewrap'); if (document.fullscree
 $('#wave').addEventListener('click', (e) => { if (frozen) cross = e.offsetX / e.target.clientWidth; });
 $('#loop-save').onclick = () => { loops.ref = (loops.prev.length ? loops.prev : loops.cur).slice(); };
 $('#loop-clear').onclick = () => { loops.ref = []; };
+$('#su-go').onclick = () => finishSetup(false);
+$('#su-learn').onclick = () => finishSetup(true);
+$('#setup-dlg').addEventListener('cancel', () => { speed = 1; try { localStorage.setItem('vsim-setup-done', '1'); } catch { /* */ } });
+$('#tip-x').onclick = () => { $('#tip').hidden = true; try { localStorage.setItem('vsim-tip', '1'); } catch { /* */ } layout(); };
+$('#tip-learn').onclick = () => showTab('learn');
+bindBar();
 $('#r-modes').onclick = () => openDrawer('modes');
 $('#r-controls').onclick = () => openDrawer('controls');
 $('#r-alarms').onclick = () => openDrawer('alarms');
@@ -539,7 +592,7 @@ $('#b-ih').onclick = () => { if (sim.set.mode === 'VC') { sim.s.holdReq = true; 
 $('#b-eh').onclick = () => { sim.s.ehReq = true; flash('Expiratory hold at the end of the next exhalation'); };
 $('#b-abg').onclick = getABG;
 $('#physics').onchange = (e) => { $('#phys').hidden = !e.target.checked; if (e.target.checked) renderPhysics(); };
-const QS = new URLSearchParams(location.search);
+const QS = new URLSearchParams(location.search); const QS_EARLY = QS;
 if (QS.get('learner') === '1') document.body.classList.add('learner');
 if (QS.get('hidep') === '1') document.body.classList.add('hidep');
 if (INSTRUCTOR) { $('#inst-note').hidden = false; $('#truth').hidden = false; }
@@ -551,6 +604,12 @@ if (CONFIG.cfToken) { // Cloudflare Web Analytics: cookieless page-view and uniq
   sc.dataset.cfBeacon = JSON.stringify({ token: CONFIG.cfToken }); document.head.append(sc);
 }
 if (location.hash === '#about') showTab('about');
+{ // first visit: ask for the patient and settings (skipped for shared links and learner links)
+  let done = false; try { done = localStorage.getItem('vsim-setup-done') === '1'; } catch { /* */ }
+  const shared = /^#s=/.test(location.hash) || QS_EARLY.get('learner') === '1';
+  if (!done && !shared && location.hash !== '#about') openSetup(); else maybeTip();
+}
+requestAnimationFrame(layout);
 sim.rec = true;
 buildControls();
 requestAnimationFrame(frame);

@@ -118,6 +118,13 @@ export function renderLearn(box) {
   box.innerHTML = `<div class="prose">
 <h2>Learn</h2>
 <p class="muted">Draft teaching content, not yet clinically reviewed. Numbers are common published targets; always follow your local protocols.</p>
+<div class="quick"><b>Quick start (60 seconds)</b>
+<ol>
+<li>Open the <b>Simulator</b> tab and choose a patient (lung type, sex, height) in the <b>Patient</b> bar at the top, or press <b>New patient...</b>.</li>
+<li>Press <b>Controls</b> on the right to change the mode, tidal volume or pressure, rate, PEEP and oxygen. The round dials show the main ones.</li>
+<li>Watch what happens to the <b>waveforms</b>, the <b>lungs</b> and the <b>loops</b>. Press <b>Insp hold</b> to read plateau pressure, <b>Exp hold</b> to read auto-PEEP, and <b>Get ABG</b> for a blood gas.</li>
+<li>Stuck? Hover over any number for a one-line explanation, open <b>Examples</b> to see common problems, or try a <b>Scenario</b> for guided practice with hints.</li>
+</ol></div>
 <p><a href="#l-use">How to use</a> | <a href="#l-screen">The screen</a> | <a href="#l-set">Settings</a> | <a href="#l-targets">Targets</a> | <a href="#l-strat">Strategies</a> | <a href="#l-wave">Expected waveforms</a> | <a href="#l-async">Asynchrony</a> | <a href="#l-calc">Formulas</a> | <a href="#l-teach">Teaching with it</a> | <a href="#l-pearls">Pearls</a></p>
 
 <h3 id="l-use">How to use this simulator</h3>
