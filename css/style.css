@@ -173,3 +173,26 @@ body.learner #patientbar { display: none; }
 .tour-card h3 { margin: 2px 0 6px; font-size: 15px; color: var(--text); text-transform: none; letter-spacing: 0; } .tour-card p { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: #cfd8e3; }
 .tour-n { font-size: 11px; color: var(--dim); } .tour-btns { display: flex; gap: 6px; align-items: center; } .tour-btns .grow { flex: 1; } .tour-skip { border-color: transparent; background: transparent; color: var(--dim); }
 .tour-btns .primary { background: var(--f); color: var(--ink-on-acc); border-color: var(--f); font-weight: 600; }
+
+/* Boba, the assistant dog */
+.boba { position: fixed; right: 14px; bottom: 10px; z-index: 40; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+.boba > * { pointer-events: auto; }
+.boba-dog { position: relative; width: 96px; height: 96px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 50%; filter: drop-shadow(0 4px 6px #000a); transform-origin: 50% 90%; animation: boba-bob 3.2s ease-in-out infinite; }
+.boba-dog img { width: 100%; height: 100%; image-rendering: pixelated; display: block; user-select: none; }
+.boba-dog:hover { filter: drop-shadow(0 4px 8px #000) brightness(1.08); }
+.boba-bubble { position: relative; max-width: 290px; background: #f6f9fc; color: #14202c; border-radius: 14px 14px 4px 14px; padding: 10px 12px 8px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 20px #000a; }
+.boba-bubble::after { content: ""; position: absolute; right: 28px; bottom: -8px; border: 8px solid transparent; border-top-color: #f6f9fc; border-bottom: 0; }
+.boba-text { padding-right: 14px; } .boba-x { position: absolute; top: 2px; right: 4px; border: 0; background: transparent; color: #5b6b7b; padding: 2px 6px; }
+.boba-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.boba-btns button { font-size: 11.5px; padding: 2px 8px; background: #e3ebf3; color: #14202c; border-color: #c4d2e0; } .boba-btns .primary { background: var(--f); border-color: var(--f); font-weight: 600; }
+.boba-zzz { position: absolute; top: -4px; right: -2px; font-size: 11px; color: #cfe8ff; opacity: 0; letter-spacing: 2px; }
+.boba-dog.nap { animation: none; opacity: .8; transform: translateY(6px) scale(.95); } .boba-dog.nap .boba-zzz { opacity: 1; animation: boba-zzz 2s ease-in-out infinite; }
+.boba-dog.wag { animation: boba-wag .9s ease-in-out; } .boba-dog.hop { animation: boba-hop .5s ease-out; } .boba-dog.zoom { animation: boba-zoom 1.4s ease-in-out; }
+@keyframes boba-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes boba-wag { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-5deg); } 80% { transform: rotate(4deg); } }
+@keyframes boba-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
+@keyframes boba-zoom { 0% { transform: translateX(0); } 30% { transform: translateX(-240px) scaleX(-1); } 60% { transform: translateX(-120px) scaleX(1); } 100% { transform: translateX(0); } }
+@keyframes boba-zzz { 0%, 100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(-6px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .boba-dog, .boba-dog.wag, .boba-dog.hop, .boba-dog.zoom, .boba-dog.nap .boba-zzz { animation: none; } }
+.bbar { margin-right: 108px; }
+@media (max-width: 700px) { .boba-dog { width: 68px; height: 68px; } .boba-bubble { max-width: 230px; } }

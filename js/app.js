@@ -5,6 +5,7 @@ import { fit, lane, range, col } from './draw.js';
 import { drawLung } from './lung.js';
 import { renderLearn } from './learn.js';
 import { startTour } from './tour.js';
+import { initBoba } from './boba.js';
 import { ASYN } from './asyn.js';
 import { CONFIG, mailto } from './config.js';
 import { renderAbout } from './about.js';
@@ -429,7 +430,7 @@ function revealTeach(sc) {
   t.replaceChildren(h('h3', {}, 'Teaching points'), h('ul', {}, ...sc.teach.map((x) => h('li', {}, x))),
     sc.refs.length ? h('p', { class: 'muted' }, 'References (verify before citing): ' + sc.refs.join(' | ')) : '');
 }
-const newSession = (sc) => ({ sc, hints: 0, cost: 0, wrong: 0, answered: {}, fired: new Set(), done: false });
+const newSession = (sc) => ({ sc, hints: 0, cost: 0, wrong: 0, answered: {}, fired: new Set(), done: false, startAt: Date.now() });
 function startScenario(sc) {
   const keep = scn && scn.sc === sc ? scn : pending[sc.id];
   scn = newSession(sc);
@@ -453,6 +454,11 @@ function renderScbar() {
       h('button', { onclick: () => { scn = null; $('#scbar').hidden = true; loadFree(sim.key); } }, 'Leave case')),
     ...sc.hints.slice(0, scn.hints).map((t, i) => h('p', {}, `Hint ${i + 1}: ${t}`)),
     unanswered && !scn.done ? h('p', { class: 'muted' }, `${unanswered} question(s) unanswered (10 points each).`) : '');
+}
+function useHint() { // used by Boba: same cost and effect as the Hint button
+  if (!scn || scn.hints >= 3) return null;
+  scn.cost += [5, 10, 15][scn.hints]; scn.hints++; renderScbar();
+  return `Hint ${scn.hints}: ${scn.sc.hints[scn.hints - 1]}`;
 }
 function renderScnDetailTab(sc) { showTab('scn'); renderScnDetail(sc); }
 function finishScenario() {
@@ -541,7 +547,9 @@ function finishSetup(thenLearn) {
 function maybeTip() { let seen = false; try { seen = localStorage.getItem('vsim-tip') === '1'; } catch { /* */ } $('#tip').hidden = seen || document.body.classList.contains('learner'); setTimeout(layout, 0); }
 
 // ---------- tabs ----------
+let curTab = 'sim';
 function showTab(t) {
+  curTab = t;
   document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   for (const id of ['sim', 'scn', 'learn', 'model', 'about']) $('#tab-' + id).hidden = id !== t;
   if (t === 'about' && !$('#tab-about').children.length) renderAbout($('#tab-about'));
@@ -619,7 +627,8 @@ if (INSTRUCTOR) { $('#inst-note').hidden = false; $('#truth').hidden = false; }
 openDrawer('');
 $('#tab-model').innerHTML = MODEL_HTML;
 const hf = $('#hdr-fb'); hf.href = CONFIG.feedbackUrl || mailto('Vent Sim feedback / bug report'); if (!CONFIG.feedbackUrl) hf.removeAttribute('target');
-if (CONFIG.cfToken) { // Cloudflare Web Analytics: cookieless page-view and unique-visitor counts
+if (CONFIG.cfToken && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { // never count local testing as visits
+  // Cloudflare Web Analytics: cookieless page-view and unique-visitor counts
   const sc = document.createElement('script'); sc.defer = true; sc.src = 'https://static.cloudflareinsights.com/beacon.min.js';
   sc.dataset.cfBeacon = JSON.stringify({ token: CONFIG.cfToken }); document.head.append(sc);
 }
@@ -635,4 +644,12 @@ buildControls();
 requestAnimationFrame(frame);
 loadFromHash();
 window.addEventListener('hashchange', loadFromHash);
+initBoba({
+  onTour: runTour, onLearn: () => showTab('learn'), onHint: useHint,
+  getCtx: () => ({
+    m: sim.metrics(), set: sim.set, t: sim.t, tab: curTab, abgCount: abgHist.length, hasHold: !!sim.hold, hasEhold: !!sim.ehold,
+    hasTriggered: sim.recent(5).some((b) => b.trig),
+    scn: scn ? { id: scn.sc.id, hints: scn.hints, done: scn.done, hintCost: [5, 10, 15][Math.min(scn.hints, 2)], secs: (Date.now() - scn.startAt) / 1000, goalsMet: evalGoals(scn.sc.goals, sim).every((g) => g.ok) } : null,
+  }),
+});
 window.__vent = { sim, get scn() { return scn; } }; // handy for debugging in the console
