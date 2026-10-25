@@ -61,6 +61,15 @@ van Diepen et al., Biomed Signal Process Control 118 (2026) 109770 (CC BY 4.0) f
 
 SIMV/PSIMV, VS, APRV, DuoPAP, NIV/HFOT, ASV-type and closed-loop modes; two-compartment lung and pendelluft; estimator layer; volumetric capnography; esophageal pressure; weaning/stress-strain panels; Web Worker. Live teaching sessions (needs a server), saved scenario accounts, recruited volume / R-I ratio, airway closure, PAV.
 
+## Reproducing the manuscript materials
+
+```bash
+node scripts/validate.mjs          # technical validation numbers -> docs/publication/validation/
+node scripts/export-gallery.mjs    # waveform data for the gallery figure
+python3 scripts/make_figures.py    # figures 1, 3, 4 (validation), 5 (timeline); needs matplotlib
+python3 scripts/md2docx.py docs/publication/manuscript.md docs/publication/manuscript.docx   # needs python-docx
+```
+
 ## Licence
 
 Code: MIT (`LICENSE`). Teaching content: CC BY 4.0 (`LICENSE-CONTENT.md`). Please cite using `CITATION.cff` or the About tab.

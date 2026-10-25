@@ -1,13 +1,13 @@
 # From idea to deployment: using AI coding assistance to build niche, personalisable simulation web apps for medical education. A case study of a free, open-source ventilator simulator
 
-**Aditya Singh, MD**¹ [CONFIRM affiliation line with your program's rules]
-¹ [Department, institution, city, country]
-Corresponding author: [email]
-ORCID: [add]
+**Aditya Singh, MD**¹ 
+¹ [Internal Medicine, Saint Vincent Hospital, Worcester, MA, USA]
+Corresponding author: [draditya.aiims@gmail.com]
+ORCID: [https://orcid.org/0009-0003-3184-7650]
 
 **Article type:** Innovation / technical report with case study (preprint draft v0.1)
 **Licence of this text:** CC BY 4.0
-**Status:** DRAFT. Items in [BRACKETS] must be completed or checked by the author. No learner data have been collected yet; Section 7 describes the planned evaluation. Do not submit until the checklist at the end is complete.
+**Status:** DRAFT. Items in [BRACKETS] must be completed or checked by the author. No learner data have been collected yet; Section 7 describes the planned evaluation. Do not submit until the checklist at the end is complete. 
 
 ---
 
@@ -17,7 +17,7 @@ ORCID: [add]
 
 **Objective.** To describe, in reproducible detail, the ideation, design decisions, challenges, integrations and deployment of a free, open-source ventilator simulator built by a physician with an AI coding assistant, and to propose a plan for testing its viability with learners.
 
-**Methods.** Case study. A physician-directed, AI-assisted workflow produced a physics-based simulator (extended equation of motion, viscoelasticity, flow-dependent resistance, expiratory flow limitation, gas exchange and haemodynamics), 10 scenarios, 7 asynchrony examples and a Learn section, deployed as a static website with automated testing, a persistent identifier, an open licence, privacy-preserving analytics and a feedback channel. We logged decisions and problems as they occurred and report them in structured tables. We verified the model by analytic tests and agreement with one published cohort.
+**Methods.** Case study. A physician-directed, AI-assisted workflow produced a physics-based simulator (extended equation of motion, viscoelasticity, flow-dependent resistance, expiratory flow limitation, gas exchange and hemodynamics), 10 scenarios, 7 asynchrony examples and a Learn section, deployed as a static website with automated testing, a persistent identifier, an open license, privacy-preserving analytics and a feedback channel. We logged decisions and problems as they occurred and report them in structured tables. We verified the model by analytic tests and agreement with one published cohort.
 
 **Results.** The first working commit was made about 20 minutes after the project folder was created and the archived, citable release followed about 2 hours later on the same evening [CONFIRM, see Section 5.1]. The deliverable is about 2,100 lines of code and markup, including 425 lines of physics engine, 43 automated tests, and recurring running costs of zero for hosting, archiving, analytics and feedback (the AI assistant itself was not free). Twelve decision points and fifteen problems are documented. Several defects were caught by testing against physiological expectations, not by the AI's own first output, including a PEEP-handling inconsistency when adapting the source equation, an expiratory flow-limitation model that failed to reproduce clinically expected PEEP behaviour, and run-away auto-PEEP in scenarios. The model reproduces the mean peak pressure, plateau pressure and auto-PEEP of one published COPD cohort after calibration to it; this is not independent validation. [Learner results: to be added.]
 
@@ -80,11 +80,17 @@ The parameter sheet recorded that a linear single-compartment lung could not rep
 ### 4.1 Architecture
 A deliberately small stack: plain JavaScript modules, HTML and CSS, no build step, no server. The physics engine (`js/engine/`, 425 lines) has no dependence on the user interface; the interface only draws its output. Scenarios are data. This separation allowed the physics to be tested headlessly and let all content live in editable data files.
 
+![Figure 1. Architecture. The physics engine has no dependence on the interface; scenarios and parameters are data; tests gate deployment, and archiving, analytics and feedback are free hosted services.](figures/fig1-architecture.png)
+
 ### 4.2 Physics model (summary)
 Airway pressure is the sum of elastic recoil (a lung in series with a chest wall; a Venegas sigmoid for ARDS), flow-dependent (Rohrer) resistance for airway and tube, a viscoelastic term and patient muscle pressure, following the extended equation of motion of van Diepen et al. [CITE: Biomed Signal Process Control 2026;118:109770]. Volume above the relaxed lung volume is tracked, so air trapping emerges. Four modes (volume control, pressure control, adaptive pressure control, pressure support/CPAP), flow triggering, holds, patient effort (including reverse triggering and cardiac oscillation), CO2 kinetics with a slow body store, the alveolar gas and shunt equations, haemoglobin saturation, Henderson-Hasselbalch acid-base with chronic compensation, and a simple venous-return model are implemented. Full equations are in the repository and the in-app Model tab.
 
 ### 4.3 Educational layer
 A ventilator-style screen (large measurements on the left, setpoint dials on the right, bottom tab bar); an animated lung pane (size follows volume, colour follows elastic stress, airway width follows resistance, diaphragm shows patient effort); pressure-volume and flow-volume loops always on screen; triangles marking patient-triggered breaths; a Learn section (how to use, settings, targets, strategies, formulas, expected waveforms generated live by the engine, clinical pearls); 10 scenarios; 7 asynchrony examples; freeze-and-crosshair measurement; and shareable setups.
+
+![Figure 2. The simulator screen (pressure support with patient effort). Large measurements (left), pressure and flow and volume waveforms with triangles at patient-triggered breaths and the dashed patient muscle pressure (centre top), animated lungs with pressure-volume and flow-volume loops (centre bottom), setpoint dials and controls (right).](figures/fig2-screenshot.png)
+
+![Figure 3. Waveforms produced by the engine for normal ventilation and seven patient-ventilator asynchronies (generated by scripts/export-gallery.mjs; no hand-drawn traces). Orange: airway pressure. Blue: flow. Dashed pink: patient muscle pressure relative to PEEP. Triangles: patient-triggered breaths.](figures/fig3-waveform-gallery.png)
 
 ### 4.4 Personalisation features that exist today
 | Feature | What it personalises | Server needed? |
@@ -113,6 +119,8 @@ A ventilator-style screen (large measurements on the left, setpoint dials on the
 | Open licences, publication materials, archived release v0.2.1 | 22:00 to ~22:10 |
 
 The planning documents pre-date this log, and the elapsed wall-clock time omits the author's thinking time before and between sessions. The numbers describe an expert-directed, AI-assisted run, not a typical novice effort. [Add author's estimate of total hours, including planning.]
+
+![Figure 4. Development timeline from the repository log (24 October 2026, US Eastern). Ticks are commits; decisions (D) and challenges (C) from Sections 6.1 and 6.2 are grouped by build phase, because their exact times were not recorded.](figures/fig5-timeline.png)
 
 ### 5.2 Workflow pattern that worked
 1. **Specify constraints before features** (static hosting, no accounts, no patient data, source tags).
@@ -182,6 +190,27 @@ Two outside documents were assessed against the project. A published low-cost ve
 ### 7.1 What has been verified (technical)
 - **Automated tests: 43, all passing.** They cover analytic results (exponential emptying with time constant R×C in the linear limit, closed-form flow equals a numerical root finder, acid-base round trip, alveolar gas and shunt equations, tube pressure drop), a reference patient (normal blood gas on reasonable settings), slow CO2 equilibration, plateau dependence on hold time, auto-PEEP behaviour, the waterfall effect, adaptive-mode convergence, the asynchrony examples, and each of the 10 scenarios (start fails, intended fix passes; two wrong fixes fail).
 - **Agreement with one cohort:** with a flow-limitation parameter tuned to it, the COPD preset gives a peak pressure of about 36, plateau of 18 and auto-PEEP of about 9 cmH2O, versus 35, 18 and 9 in the source cohort [CITE: Ann Intensive Care 2021, doi 10.1186/s13613-021-00948-9]. Because this parameter was fitted to those data, this is **calibration, not validation.**
+**Table 7.1. Technical validation results** (generated by `scripts/validate.mjs`; re-run to reproduce).
+
+| Check | Result |
+|---|---|
+| Linear-limit emptying vs exp(-t/tau), tau = 0.150 s | max absolute volume error 1.23 mL |
+| Closed-form flow vs numerical root finder | max absolute error 4.4e-16 L/s |
+| Tube drop at 1 L/s (K1+K2): 7, 8, 9 mm | 8.11, 5.43, 3.40 cmH2O |
+| Alveolar gas equation, room air, PaCO2 40 | PAO2 99.7 mmHg |
+| Shunt equation: PaO2 at shunt 0 / 30% (room air) | 99.7 / 53.1 mmHg |
+| Severinghaus saturation at P50 26.8 mmHg | 0.499 |
+| Reference patient (VT 450, RR 14, PEEP 5), FiO2 0.21 | pH 7.39, PaCO2 40, PaO2 89 |
+| Reference patient, FiO2 0.40 | pH 7.39, PaCO2 40, PaO2 180 |
+| COPD vs published cohort (qmax 0.10): peak / plateau / auto-PEEP | 36 / 18 / 9.2 cmH2O vs 35 / 18 / 9 (calibrated: not independent) |
+| Waterfall: total PEEP with set PEEP 0 vs 4 (flow limited) | 9.2 vs 9.2 cmH2O |
+| Adaptive mode after halving compliance (target 450): exhaled VT at breath 1 / 5 / 10 | 388 / 450 / 450 mL |
+| PaCO2 after halving rate: start, at 60 min, time to 63% | 40, 75 mmHg, 23 min |
+| Plateau at hold 0.25 s vs 3 s | 14.2 vs 13.5 cmH2O |
+| Scenarios where start meets goals / fix fails goals | 0 / 0 of 10 |
+
+![Figure 5. Technical validation. A: emptying of a linear lung equals exp(-t/RC). B: the COPD preset against published cohort means as the flow-limit parameter varies (the vertical line marks the value fitted to the cohort). C: in a flow-limited lung, low extrinsic PEEP leaves total PEEP unchanged until it exceeds the airway collapse pressure. D: the adaptive mode restores the target volume within a few breaths after compliance is halved. E: PaCO2 approaches its new level with a time constant of about 23 minutes. F: plateau pressure falls as the inspiratory hold lengthens.](figures/fig4-validation.png)
+
 - **Not done:** comparison with an independent engine (Pulse, BioGears) or published simulation output; clinical review of presets, cases and teaching text; accessibility testing; cross-device testing beyond a desktop browser.
 
 ### 7.2 A common risk: tests written by the same author as the code

@@ -1,0 +1,13 @@
+22:14|Draft manuscript: AI-assisted development of niche educational simulators, case study
+22:02|Use Zenodo concept DOI (all versions) for citation
+22:00|Open licences (MIT, CC BY 4.0), manuscript outline, pre/post quiz forms, key, evaluation protocol and survey
+21:32|Enable Cloudflare Web Analytics
+21:29|Add Zenodo DOI to citation, About page and README
+21:24|Add live URL and repository to citation metadata
+21:13|Remove headline line and instructor-view section from pages
+21:10|Add feedback form link
+21:02|About page with citation and disclosures, feedback links, Cloudflare Web Analytics hook, form design
+20:49|Asynchrony examples, reverse triggering, cardiac oscillation, shaped effort, P0.1, stress index, asthma, freeze/crosshair, share and learner links, expanded Learn tab
+20:34|Mark patient-triggered breaths with a triangle on the pressure waveform
+20:22|Ventilator-style screen, animated lungs, always-visible loops, Learn tab
+20:10|Dr. Singh's Vent Sim: engine, simulator UI, 10 scenarios, tests, Pages workflow
