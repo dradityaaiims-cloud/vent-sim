@@ -2,7 +2,6 @@ import { CONFIG, mailto } from './config.js';
 
 const ME = {
   name: 'Aditya Singh, MD',
-  headline: 'PGY-3 Internal Medicine resident',
   bio: [
     'I am an internal medicine resident with an interest in pulmonary and critical care medicine and in medical education. I build free interactive web apps and write about health and medical education.',
     'I made this simulator so that trainees can see, on a screen, what the numbers and waveforms on a ventilator mean, and practise troubleshooting without any risk to a patient.',
@@ -41,7 +40,6 @@ export function renderAbout(box) {
   box.innerHTML = `<div class="prose">
 <h2>About</h2>
 <h3>${esc(ME.name)}</h3>
-<p><b>${esc(ME.headline)}</b></p>
 ${ME.bio.map((p) => `<p>${esc(p)}</p>`).join('')}
 
 <h3>Find me</h3>

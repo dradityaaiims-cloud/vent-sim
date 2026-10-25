@@ -33,6 +33,4 @@ Source: van Diepen et al., Biomed Signal Process Control 118 (2026) 109770 (CC B
 </ul>
 <h2>Related work</h2>
 <p>Other browser ventilator simulators exist (for example the RT Maven simulator by T. Piraino, which has a strong asynchrony and teaching-session focus). This app was designed independently; its content and code are original, and feature ideas such as asynchrony examples, share links and learner mode follow common teaching practice. Please cite the sources listed in the README for the physiology.</p>
-<h2>Instructor view</h2>
-<p>Add <code>?instructor=1</code> to the address. This shows model truth next to what the ventilator reports. It has no passcode and stores nothing.</p>
 </div>`;
