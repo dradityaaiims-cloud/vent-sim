@@ -114,3 +114,7 @@ table.abg .lo { color: #7db8ff; } table.abg .hi { color: #ffb59a; }
 .ex { background: #0c1219; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 6px 0; } .ex h4 { margin: 0 0 4px; } .ex p { margin: 4px 0; font-size: 13px; color: var(--dim); }
 body.learner [data-d=patient], body.learner [data-d=examples], body.learner #physics, body.learner .chk { display: none; }
 body.hidep #meas, body.hidep .num.pk .big b { visibility: hidden; }
+
+.hdrlink { color: var(--f); font-size: 13px; align-self: center; margin-left: 8px; }
+.btnlink { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); text-decoration: none; background: #0e141c; } .btnlink.primary { background: var(--f); color: var(--ink-on-acc); border-color: var(--f); font-weight: 600; }
+.cite { background: #0e141c; border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 4px 0; }

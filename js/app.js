@@ -5,6 +5,8 @@ import { fit, lane, range, col } from './draw.js';
 import { drawLung } from './lung.js';
 import { renderLearn } from './learn.js';
 import { ASYN } from './asyn.js';
+import { CONFIG, mailto } from './config.js';
+import { renderAbout } from './about.js';
 import { PRESETS } from './engine/presets.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -477,7 +479,8 @@ function fireEvents() {
 // ---------- tabs ----------
 function showTab(t) {
   document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
-  for (const id of ['sim', 'scn', 'learn', 'model']) $('#tab-' + id).hidden = id !== t;
+  for (const id of ['sim', 'scn', 'learn', 'model', 'about']) $('#tab-' + id).hidden = id !== t;
+  if (t === 'about' && !$('#tab-about').children.length) renderAbout($('#tab-about'));
   if (t === 'scn' && !$('#tab-scn').children.length) renderScnList();
   if (t === 'learn' && !$('#tab-learn').children.length) renderLearn($('#tab-learn'));
 }
@@ -542,6 +545,12 @@ if (QS.get('hidep') === '1') document.body.classList.add('hidep');
 if (INSTRUCTOR) { $('#inst-note').hidden = false; $('#truth').hidden = false; }
 openDrawer('');
 $('#tab-model').innerHTML = MODEL_HTML;
+const hf = $('#hdr-fb'); hf.href = CONFIG.feedbackUrl || mailto('Vent Sim feedback / bug report'); if (!CONFIG.feedbackUrl) hf.removeAttribute('target');
+if (CONFIG.cfToken) { // Cloudflare Web Analytics: cookieless page-view and unique-visitor counts
+  const sc = document.createElement('script'); sc.defer = true; sc.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+  sc.dataset.cfBeacon = JSON.stringify({ token: CONFIG.cfToken }); document.head.append(sc);
+}
+if (location.hash === '#about') showTab('about');
 sim.rec = true;
 buildControls();
 requestAnimationFrame(frame);
