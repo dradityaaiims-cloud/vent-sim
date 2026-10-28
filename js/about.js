@@ -15,6 +15,7 @@ const ME = {
   ],
   apps: [
     ['Robotic bronchoscopy simulator', 'https://dradityaaiims-cloud.github.io/bronchoscopy-sim/'],
+    ['Right heart catheterization simulator', 'https://dradityaaiims-cloud.github.io/rhc-sim/'],
   ],
 };
 
