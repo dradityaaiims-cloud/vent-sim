@@ -16,6 +16,8 @@ const ME = {
   apps: [
     ['Robotic bronchoscopy simulator', 'https://dradityaaiims-cloud.github.io/bronchoscopy-sim/'],
     ['Right heart catheterization simulator', 'https://dradityaaiims-cloud.github.io/rhc-sim/'],
+    ['Arterial line and transducer simulator', 'https://dradityaaiims-cloud.github.io/artline-sim/'],
+    ['Electrophysiology study and pacemaker simulator', 'https://dradityaaiims-cloud.github.io/ep-sim/'],
   ],
 };
 
